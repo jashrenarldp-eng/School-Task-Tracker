@@ -317,15 +317,6 @@
       const saveStatus = document.getElementById("saveStatus");
       const clearButton = document.getElementById("clearButton");
       const progressTrack = document.querySelector(".progress-track");
-
-      /*
-       * Completion state is an object such as:
-       *
-       * {
-       *   "review-project-brief": true,
-       *   "complete-first-draft": true
-       * }
-       */
       let completionState = loadCompletionState();
 
       function loadCompletionState() {
@@ -346,10 +337,7 @@
             return {};
           }
 
-          /*
-           * Keep only valid task IDs and boolean values.
-           * This prevents malformed or outdated data from breaking the page.
-           */
+
           return Object.fromEntries(
             Object.entries(parsedValue).filter(([taskId, isComplete]) => {
               return (
@@ -359,10 +347,7 @@
             })
           );
         } catch (error) {
-          /*
-           * localStorage may be unavailable in some privacy modes.
-           * The tracker still works for the current page view in that case.
-           */
+
           console.warn("Task state could not be loaded.", error);
           return {};
         }
@@ -378,10 +363,7 @@
           showSaveStatus("Saved on this device.");
           return true;
         } catch (error) {
-          /*
-           * Do not show the old backend-save error.
-           * The task remains visually updated even if storage is blocked.
-           */
+
           console.warn("Task state could not be saved.", error);
           showSaveStatus("Saved for this visit.");
           return false;
@@ -486,11 +468,6 @@
 </body>
 </html>
 
-The important fix is that the checkbox handler updates completionState synchronously and then calls:
-
-localStorage.setItem(
-  "canva-task-tracker-completions-v1",
-  JSON.stringify(completionState)
 );
 
 No fetch(), API endpoint, account session, or backend database is required. Each visitor gets a separate saved state in their own browser.
