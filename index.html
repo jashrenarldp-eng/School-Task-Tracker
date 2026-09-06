@@ -285,16 +285,9 @@
 
   <script>
     (() => {
-      /*
-       * Use a unique, namespaced key for this specific tracker.
-       * Changing this value creates a separate saved tracker.
-       */
+
       const STORAGE_KEY = "canva-task-tracker-completions-v1";
 
-      /*
-       * Keep task data separate from completion state.
-       * Each task has a stable ID that does not depend on its array position.
-       */
       const tasks = [
         {
           id: "review-project-brief",
