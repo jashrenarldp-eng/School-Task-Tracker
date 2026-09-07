@@ -54,7 +54,7 @@
       margin: 0 auto;
     }
 
-    /* Top Bar Header */
+    /* Header Layout */
     .top-header {
       display: flex;
       justify-content: space-between;
@@ -133,7 +133,7 @@
       color: #166534;
     }
 
-    /* Legend Grid */
+    /* Subject Legend */
     .subject-legend {
       display: grid;
       grid-template-columns: repeat(4, auto);
@@ -164,7 +164,7 @@
       border-radius: 2px;
     }
 
-    /* Class Tasks Controls */
+    /* Section Controls */
     .controls-section {
       margin-top: 16px;
       margin-bottom: 24px;
@@ -179,11 +179,6 @@
       font-size: 0.85rem;
       cursor: pointer;
       margin-bottom: 16px;
-      transition: background 0.2s;
-    }
-
-    .btn-tab:hover {
-      background: #f8fafc;
     }
 
     .section-desc {
@@ -213,7 +208,6 @@
       font-weight: 700;
       font-size: 0.8rem;
       cursor: pointer;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
     .status-banner {
@@ -227,7 +221,7 @@
       display: inline-block;
     }
 
-    /* Cards Grid */
+    /* Task Grid */
     .task-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -268,6 +262,12 @@
       margin-bottom: 12px;
     }
 
+    .card-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .checkbox {
       width: 20px;
       height: 20px;
@@ -292,6 +292,26 @@
       font-weight: bold;
       top: -2px;
       left: 3px;
+    }
+
+    .btn-expand-icon {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .btn-expand-icon:hover {
+      background: rgba(255, 255, 255, 0.4);
     }
 
     .badge {
@@ -331,7 +351,7 @@
       word-break: break-all;
     }
 
-    /* Blank / Placeholder Cards */
+    /* Empty Placeholders */
     .card-empty {
       background: rgba(255, 255, 255, 0.8);
       border: 2px dashed #cbd5e1;
@@ -343,28 +363,64 @@
       border-color: #334155;
     }
 
-    .card-empty:hover {
-      transform: translateY(-3px);
-      background: #ffffff;
-    }
-
-    .card-empty .badge-placeholder {
-      width: 18px;
-      height: 24px;
-      background: #e2e8f0;
-      border-radius: 12px;
-    }
-
-    .card-empty .checkbox {
-      border-color: #cbd5e1;
-    }
-
-    /* Dynamic Card Themes */
+    /* Subject Themes */
     .bg-nstp { background-color: var(--color-nstp); }
     .bg-pathfit { background-color: var(--color-pathfit); }
     .bg-cmpe { background-color: var(--color-cmpe); }
     .bg-geed032 { background-color: var(--color-geed032); }
-    .bg-math101 { background-color: var(--color-math101); } 
+    .bg-math101 { background-color: var(--color-math101); }
+
+    /* Semi-Transparent Glass Expansion Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .glass-card-modal {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 36px;
+      width: 100%;
+      max-width: 650px;
+      color: white;
+      position: relative;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
   </style>
 </head>
 
@@ -416,7 +472,10 @@
         <div class="card bg-nstp" data-id="task-1">
           <div>
             <div class="card-top">
-              <input type="checkbox" class="checkbox" />
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" />
+                <button class="btn-expand-icon" title="Expand task view">⤢</button>
+              </div>
               <span class="badge">NSTP 1 - CWTS</span>
             </div>
             <h3 class="card-title">NSTP 1: Attend NSTP Orientation on September 6</h3>
@@ -427,10 +486,28 @@
           </div>
         </div>
 
+        <div class="card bg-pathfit" data-id="task-2">
+          <div>
+            <div class="card-top">
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" />
+                <button class="btn-expand-icon" title="Expand task view">⤢</button>
+              </div>
+              <span class="badge">PATHFIT 1</span>
+            </div>
+            <h3 class="card-title">Pathfit Group Collage</h3>
+            <div class="due-date">September 4, 2026, @12AM</div>
+          </div>
+          <div class="card-body">Refer to your respective groups.</div>
+        </div>
+
         <div class="card bg-cmpe" data-id="task-3">
           <div>
             <div class="card-top">
-              <input type="checkbox" class="checkbox" />
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" />
+                <button class="btn-expand-icon" title="Expand task view">⤢</button>
+              </div>
               <span class="badge">CMPE 011</span>
             </div>
             <h3 class="card-title">CMPE GROUPINGS</h3>
@@ -442,7 +519,10 @@
         <div class="card bg-geed032" data-id="task-4">
           <div>
             <div class="card-top">
-              <input type="checkbox" class="checkbox" />
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" />
+                <button class="btn-expand-icon" title="Expand task view">⤢</button>
+              </div>
               <span class="badge">GEED 032</span>
             </div>
             <h3 class="card-title">Kabanata 1: Panimulang Gawain</h3>
@@ -454,66 +534,51 @@
         <div class="card bg-math101" data-id="task-5">
           <div>
             <div class="card-top">
-               <input type="checkbox" class="checkbox" />
-               <span class="badge">MATH 101</span>
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" />
+                <button class="btn-expand-icon" title="Expand task view">⤢</button>
+              </div>
+              <span class="badge">MATH 101</span>
             </div>
             <h3 class="card-title">Read Lesson 1.3 to 1.4</h3>
             <div class="due-date">Due on September 7, 2026 @4PM</div>
           </div> 
-          <div class="card-body">Read and understand the concepts of Lesson 1.3:Limit Theorems and Lesson 1.4:One-Sided Limits.</div>                                                        
-        </div>
-
-        <div class="card card-empty">
-          <div class="card-top">
-            <input type="checkbox" class="checkbox" disabled />
-            <div class="badge-placeholder"></div>
-          </div>
-        </div>
-
-        <div class="card card-empty">
-          <div class="card-top">
-            <input type="checkbox" class="checkbox" disabled />
-            <div class="badge-placeholder"></div>
-          </div>
-        </div>  
-
-        <div class="card card-empty">
-          <div class="card-top">
-            <input type="checkbox" class="checkbox" disabled />
-            <div class="badge-placeholder"></div>
-          </div>
-        </div>
-
-        <div class="card card-empty">
-          <div class="card-top">
-            <input type="checkbox" class="checkbox" disabled />
-            <div class="badge-placeholder"></div>
-          </div>
+          <div class="card-body">Read and understand the concepts of Lesson 1.3: Limit Theorems and Lesson 1.4: One-Sided Limits.</div>                                                        
         </div>
 
       </div>
     </section>
+  </div>
 
+  <!-- Semi-Transparent Expand Overlay Modal -->
+  <div id="expandModal" class="modal-overlay">
+    <div class="glass-card-modal">
+      <button class="modal-close-btn" id="btnCloseExpand">&times;</button>
+      <div style="margin-bottom: 12px;">
+        <span id="expBadge" class="badge">SUBJECT</span>
+      </div>
+      <h2 id="expTitle" style="font-family: 'Georgia', serif; font-size: 1.8rem; margin: 0 0 12px 0;">Task Title</h2>
+      <div id="expDueDate" class="due-date" style="font-size: 1rem; margin-bottom: 16px;">Due Date</div>
+      <div id="expBody" style="font-size: 1.05rem; line-height: 1.6; opacity: 0.95;">Task details...</div>
+    </div>
   </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const themeToggle = document.getElementById("themeToggle");
       const STORAGE_KEY = "school-board-task-state";
       const THEME_KEY = "school-board-theme";
-      const cards = document.querySelectorAll(".card[data-id]");
-      const saveBanner = document.getElementById("saveBanner");
 
-      // 1. Check and apply saved theme on initial load
-      const savedTheme = localStorage.getItem(THEME_KEY);
-      if (savedTheme === "dark") {
+      const themeToggle = document.getElementById("themeToggle");
+      const expandModal = document.getElementById("expandModal");
+      const btnCloseExpand = document.getElementById("btnCloseExpand");
+      const cards = document.querySelectorAll(".card[data-id]");
+
+      // Theme toggle restoration
+      if (localStorage.getItem(THEME_KEY) === "dark") {
         document.body.classList.add("dark-mode");
         themeToggle.textContent = "Light Mode";
-      } else {
-        themeToggle.textContent = "Dark Mode";
       }
 
-      // 2. Toggle dark mode on click
       themeToggle.addEventListener("click", () => {
         document.body.classList.toggle("dark-mode");
         const isDark = document.body.classList.contains("dark-mode");
@@ -521,7 +586,7 @@
         themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
       });
 
-      // 3. Load saved card completion state
+      // Load task check status
       let savedState = {};
       try {
         savedState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
@@ -532,22 +597,23 @@
       cards.forEach(card => {
         const id = card.getAttribute("data-id");
         const checkbox = card.querySelector(".checkbox");
+        const expandBtn = card.querySelector(".btn-expand-icon");
 
         if (savedState[id]) {
           card.classList.add("completed");
           if (checkbox) checkbox.checked = true;
         }
 
-        // Toggle task completion state on card click
+        // Toggle task completion on card click
         card.addEventListener("click", (e) => {
-          if (e.target.tagName === "A") return; // Allow clicking links inside cards
+          if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon")) return;
           
           const isChecked = !card.classList.contains("completed");
           card.classList.toggle("completed", isChecked);
           if (checkbox) checkbox.checked = isChecked;
 
           savedState[id] = isChecked;
-          saveState();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
         });
 
         if (checkbox) {
@@ -556,19 +622,29 @@
             const isChecked = checkbox.checked;
             card.classList.toggle("completed", isChecked);
             savedState[id] = isChecked;
-            saveState();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
+          });
+        }
+
+        // Expand button logic
+        if (expandBtn) {
+          expandBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            document.getElementById("expBadge").textContent = card.querySelector(".badge").textContent;
+            document.getElementById("expTitle").textContent = card.querySelector(".card-title").textContent;
+            document.getElementById("expDueDate").textContent = card.querySelector(".due-date").textContent;
+            document.getElementById("expBody").innerHTML = card.querySelector(".card-body").innerHTML;
+            
+            expandModal.classList.add("active");
           });
         }
       });
 
-      function saveState() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
-          saveBanner.textContent = "Saved on this device.";
-        } catch (e) {
-          saveBanner.textContent = "Saved for this visit.";
-        }
-      }
+      // Close expanded card modal
+      btnCloseExpand.addEventListener("click", () => expandModal.classList.remove("active"));
+      window.addEventListener("click", (e) => {
+        if (e.target === expandModal) expandModal.classList.remove("active");
+      });
     });
   </script>
 </body>
