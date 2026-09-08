@@ -432,6 +432,8 @@
   import { 
     getAuth, 
     signInWithEmailAndPassword, 
+    setPersistence,
+    inMemoryPersistence,
     onAuthStateChanged,
     signOut 
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -452,6 +454,11 @@
 
   const OFFICER_EMAIL = "officer@class.com";
 
+  // Force session to expire on tab/browser close or refresh
+  setPersistence(auth, inMemoryPersistence).catch((err) => {
+    console.warn("Auth persistence error:", err);
+  });
+
   // Firestore Offline Persistence
   enableIndexedDbPersistence(db).catch((err) => {
     console.warn("Offline persistence status:", err.code);
@@ -461,7 +468,9 @@
   const expandModal = document.getElementById("expandModal");
   const adminModal = document.getElementById("adminModal");
 
-  /*1. DARK MODE FEATURE*/
+  /* ==========================================
+     1. DARK MODE FEATURE
+     ========================================== */
   const themeToggleBtn = document.getElementById("themeToggle");
 
   function applyTheme(theme) {
@@ -485,7 +494,9 @@
     themeToggleBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
   });
 
-  /*2. OFFLINE & NETWORK STATUS FEATURE*/
+  /* ==========================================
+     2. OFFLINE & NETWORK STATUS FEATURE
+     ========================================== */
   const netStatusPill = document.getElementById("netStatusPill");
   const saveBanner = document.getElementById("saveBanner");
 
@@ -539,7 +550,9 @@
     });
   }
 
-  /*3. FIRESTORE TASK MANAGEMENT*/
+  /* ==========================================
+     3. FIRESTORE TASK MANAGEMENT
+     ========================================== */
   function getPersonalTaskState(taskId) {
     const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
     return !!localData[taskId];
@@ -624,14 +637,24 @@
     taskGrid.appendChild(card);
   }
 
-  /*4. AUTHENTICATION & ADMIN MODAL*/
+  /* ==========================================
+     4. AUTHENTICATION & ADMIN MODAL
+     ========================================== */
   document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
-  document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
-  document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
+  
+  document.getElementById("btnAdminAccess").addEventListener("click", () => {
+    adminModal.classList.add("active");
+  });
 
-  // Monitor Authentication State
+  // Closing the Admin modal automatically signs out the officer session
+  document.getElementById("btnCloseAdmin").addEventListener("click", async () => {
+    adminModal.classList.remove("active");
+    await signOut(auth);
+  });
+
+  // Monitor Auth State Changes
   onAuthStateChanged(auth, (user) => {
-    if (user) {
+    if (user && user.email === OFFICER_EMAIL) {
       document.getElementById("adminAuthStep").style.display = "none";
       document.getElementById("adminFormStep").style.display = "block";
     } else {
@@ -651,7 +674,7 @@
       document.getElementById("adminPasscode").value = "";
     } catch (error) {
       console.error("Auth Error:", error);
-      errorDiv.textContent = "Incorrect password. Try again.";
+      errorDiv.textContent = "Incorrect passcode or unauthorized user.";
       errorDiv.style.display = "block";
     }
   });
@@ -672,9 +695,10 @@
       await addDoc(collection(db, "tasks"), newTask);
       document.getElementById("adminTaskForm").reset();
       adminModal.classList.remove("active");
+      await signOut(auth); // Sign out after task is published
       alert("Task successfully published!");
     } catch (err) {
-      alert("Failed to publish task: " + err.message);
+      alert("Failed to publish task. Check your permissions: " + err.message);
     }
   });
 </script>
