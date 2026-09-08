@@ -862,485 +862,160 @@
 
 
 
-  <script>
-
-    document.addEventListener("DOMContentLoaded", () => {
-
-      const THEME_KEY = "school-board-theme";
-
-      const themeToggle = document.getElementById("themeToggle");
-
-      
-
-      if (localStorage.getItem(THEME_KEY) === "dark") {
-
-        document.body.classList.add("dark-mode");
-
-        themeToggle.textContent = "Light Mode";
-
-      }
-
-
-
-      themeToggle.addEventListener("click", () => {
-
-        document.body.classList.toggle("dark-mode");
-
-        const isDark = document.body.classList.contains("dark-mode");
-
-        localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
-
-        themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
-
-      });
-
-
-
-      // Service Worker Registration
-
-      if ('serviceWorker' in navigator) {
-
-        window.addEventListener('load', () => {
-
-          navigator.serviceWorker.register('./sw.js')
-
-            .then((registration) => {
-
-              registration.update();
-
-              console.log('Service Worker updated successfully.');
-
-            })
-
-            .catch((err) => console.error('Service Worker Registration Failed:', err));
-
-        });
-
-      }
-
-
-
-      // Live Network Status Observer
-
-      const netStatusPill = document.getElementById("netStatusPill");
-
-      const saveBanner = document.getElementById("saveBanner");
-
-
-
-      function updateOnlineStatus() {
-
-        if (navigator.onLine) {
-
-          netStatusPill.className = "btn-pill btn-light-green";
-
-          netStatusPill.textContent = "⚡ Syncing Live";
-
-          saveBanner.className = "status-banner btn-light-green";
-
-          saveBanner.textContent = "🟢 Connected to Cloud Database (Auto-Sync Active)";
-
-        } else {
-
-          netStatusPill.className = "btn-pill btn-offline";
-
-          netStatusPill.textContent = "📦 Offline Mode";
-
-          saveBanner.className = "status-banner btn-offline";
-
-          saveBanner.textContent = "🟡 You are offline. Displaying cached tasks. Updates will auto-sync when back online.";
-
-        }
-
-      }
-
-
-
-      window.addEventListener('online', updateOnlineStatus);
-
-      window.addEventListener('offline', updateOnlineStatus);
-
-      updateOnlineStatus();
-
-
-
-      // PWA Install Prompt Handler
-
-      let deferredPrompt;
-
-      window.addEventListener("beforeinstallprompt", (e) => {
-
-        e.preventDefault();
-
-        deferredPrompt = e;
-
-        const installBtn = document.getElementById("btnInstallPWA");
-
-        if (installBtn) {
-
-          installBtn.style.display = "inline-flex";
-
-          installBtn.addEventListener("click", async () => {
-
-            deferredPrompt.prompt();
-
-            const { outcome } = await deferredPrompt.userChoice;
-
-            console.log(`User response to install prompt: ${outcome}`);
-
-            deferredPrompt = null;
-
-            installBtn.style.display = "none";
-
-          });
-
-        }
-
-      });
-
-    });
-
-  </script>
-
-
-
-  <!-- Firebase & Admin Task Publisher Logic -->
-
   <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    enableIndexedDbPersistence, 
+    collection, 
+    addDoc, 
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  // Updated officer passcode
+  const OFFICER_PASSCODE = "BSIE1-5090820261";
 
-    import { 
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
+    authDomain: "takeitdoit-app.firebaseapp.com",
+    projectId: "takeitdoit-app",
+    storageBucket: "takeitdoit-app.firebasestorage.app",
+    messagingSenderId: "1057165971311",
+    appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
+    measurementId: "G-S8PC6K718R"
+  };
 
-      getFirestore, 
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-      enableIndexedDbPersistence, 
+  enableIndexedDbPersistence(db).catch((err) => {
+    console.warn("Offline persistence status:", err.code);
+  });
 
-      collection, 
+  const taskGrid = document.getElementById("taskGrid");
+  const expandModal = document.getElementById("expandModal");
+  const adminModal = document.getElementById("adminModal");
 
-      addDoc, 
+  function getPersonalTaskState(taskId) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    return !!localData[taskId];
+  }
 
-      onSnapshot
+  function setPersonalTaskState(taskId, isCompleted) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    localData[taskId] = isCompleted;
+    localStorage.setItem("user_task_progress", JSON.stringify(localData));
+  }
 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  onSnapshot(collection(db, "tasks"), (snapshot) => {
+    taskGrid.innerHTML = "";
 
+    if (snapshot.empty) {
+      taskGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          No tasks published by officers yet.
+        </div>`;
+      return;
+    }
 
+    snapshot.forEach((docSnap) => {
+      renderTaskCard(docSnap.id, docSnap.data());
+    });
+  }, (error) => {
+    console.error("Firestore Read Error: ", error);
+  });
 
-    // Set officer passcode here
- <script type="module">
+  function renderTaskCard(id, data) {
+    const isCompleted = getPersonalTaskState(id);
+    const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
+    
+    const card = document.createElement("div");
+    card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
+    card.setAttribute("data-id", id);
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    card.innerHTML = `
+      <div>
+        <div class="card-top">
+          <div class="card-controls">
+            <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
+            <button class="btn-expand-icon" title="Expand task view">⤢</button>
+          </div>
+          <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+        </div>
+        <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+        <div class="due-date">${data.dueDate || ''}</div>
+      </div>
+      <div class="card-body">${data.body || ''}</div>
+    `;
 
-    import { 
+    const checkbox = card.querySelector(".checkbox");
 
-      getFirestore, 
-
-      enableIndexedDbPersistence, 
-
-      collection, 
-
-      addDoc, 
-
-      onSnapshot
-
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-
-
-    // Set officer passcode here
-
-    const OFFICER_PASSCODE = "BSIE1-5090820261";
-
-
-
-    const firebaseConfig = {
-
-      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-
-      authDomain: "takeitdoit-app.firebaseapp.com",
-
-      projectId: "takeitdoit-app",
-
-      storageBucket: "takeitdoit-app.firebasestorage.app",
-
-      messagingSenderId: "1057165971311",
-
-      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-
-      measurementId: "G-S8PC6K718R"
-
+    const toggleCompletion = () => {
+      const newState = !getPersonalTaskState(id);
+      setPersonalTaskState(id, newState);
+      checkbox.checked = newState;
+      card.classList.toggle("completed", newState);
     };
 
-
-
-    const app = initializeApp(firebaseConfig);
-
-    const db = getFirestore(app);
-
-
-
-    enableIndexedDbPersistence(db).catch((err) => {
-
-      console.warn("Offline persistence status:", err.code);
-
+    checkbox.addEventListener("change", (e) => {
+      e.stopPropagation();
+      setPersonalTaskState(id, checkbox.checked);
+      card.classList.toggle("completed", checkbox.checked);
     });
 
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
+      toggleCompletion();
+    });
 
+    card.querySelector(".btn-expand-icon").addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+      document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+      document.getElementById("expDueDate").textContent = data.dueDate || '';
+      document.getElementById("expBody").innerHTML = data.body || '';
+      expandModal.classList.add("active");
+    });
 
-    const taskGrid = document.getElementById("taskGrid");
+    taskGrid.appendChild(card);
+  }
 
-    const expandModal = document.getElementById("expandModal");
+  // Modal Control Events
+  document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
+  document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
+  document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
 
-    const adminModal = document.getElementById("adminModal");
-
-
-
-    function getPersonalTaskState(taskId) {
-
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-
-      return !!localData[taskId];
-
+  // Passcode Verification Handler
+  document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
+    const enteredCode = document.getElementById("adminPasscode").value;
+    if (enteredCode === OFFICER_PASSCODE) {
+      document.getElementById("adminAuthStep").style.display = "none";
+      document.getElementById("adminFormStep").style.display = "block";
+      document.getElementById("passcodeError").style.display = "none";
+    } else {
+      document.getElementById("passcodeError").style.display = "block";
     }
+  });
 
+  // Task Creation Handler
+  document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const newTask = {
+      title: document.getElementById("adminTaskTitle").value,
+      subject: document.getElementById("adminTaskSubject").value,
+      dueDate: document.getElementById("adminTaskDueDate").value,
+      body: document.getElementById("adminTaskBody").value,
+      createdAt: new Date().toISOString()
+    };
 
-
-    function setPersonalTaskState(taskId, isCompleted) {
-
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-
-      localData[taskId] = isCompleted;
-
-      localStorage.setItem("user_task_progress", JSON.stringify(localData));
-
+    try {
+      await addDoc(collection(db, "tasks"), newTask);
+      document.getElementById("adminTaskForm").reset();
+      adminModal.classList.remove("active");
+      alert("Task successfully published!");
+    } catch (err) {
+      alert("Failed to publish task: " + err.message);
     }
-
-
-
-    onSnapshot(collection(db, "tasks"), (snapshot) => {
-
-      taskGrid.innerHTML = "";
-
-
-
-      if (snapshot.empty) {
-
-        taskGrid.innerHTML = `
-
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-
-            No tasks published by officers yet.
-
-          </div>`;
-
-        return;
-
-      }
-
-
-
-      snapshot.forEach((docSnap) => {
-
-        renderTaskCard(docSnap.id, docSnap.data());
-
-      });
-
-    }, (error) => {
-
-      console.error("Firestore Read Error: ", error);
-
-    });
-
-
-
-    function renderTaskCard(id, data) {
-
-      const isCompleted = getPersonalTaskState(id);
-
-      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-
-      
-
-      const card = document.createElement("div");
-
-      card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
-
-      card.setAttribute("data-id", id);
-
-
-
-      card.innerHTML = `
-
-        <div>
-
-          <div class="card-top">
-
-            <div class="card-controls">
-
-              <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
-
-              <button class="btn-expand-icon" title="Expand task view">⤢</button>
-
-            </div>
-
-            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
-
-          </div>
-
-          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-
-          <div class="due-date">${data.dueDate || ''}</div>
-
-        </div>
-
-        <div class="card-body">${data.body || ''}</div>
-
-      `;
-
-
-
-      const checkbox = card.querySelector(".checkbox");
-
-
-
-      const toggleCompletion = () => {
-
-        const newState = !getPersonalTaskState(id);
-
-        setPersonalTaskState(id, newState);
-
-        checkbox.checked = newState;
-
-        card.classList.toggle("completed", newState);
-
-      };
-
-
-
-      checkbox.addEventListener("change", (e) => {
-
-        e.stopPropagation();
-
-        setPersonalTaskState(id, checkbox.checked);
-
-        card.classList.toggle("completed", checkbox.checked);
-
-      });
-
-
-
-      card.addEventListener("click", (e) => {
-
-        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
-
-        toggleCompletion();
-
-      });
-
-
-
-      card.querySelector(".btn-expand-icon").addEventListener("click", (e) => {
-
-        e.stopPropagation();
-
-        document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-
-        document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-
-        document.getElementById("expDueDate").textContent = data.dueDate || '';
-
-        document.getElementById("expBody").innerHTML = data.body || '';
-
-        expandModal.classList.add("active");
-
-      });
-
-
-
-      taskGrid.appendChild(card);
-
-    }
-
-
-
-    // Modal Control Events
-
-    document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
-
-    document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
-
-    document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
-
-
-
-    // Passcode Verification Handler
-
-    document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
-
-      const enteredCode = document.getElementById("adminPasscode").value;
-
-      if (enteredCode === OFFICER_PASSCODE) {
-
-        document.getElementById("adminAuthStep").style.display = "none";
-
-        document.getElementById("adminFormStep").style.display = "block";
-
-        document.getElementById("passcodeError").style.display = "none";
-
-      } else {
-
-        document.getElementById("passcodeError").style.display = "block";
-
-      }
-
-    });
-
-
-
-    // Task Creation Handler
-
-    document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
-
-      e.preventDefault();
-
-      
-
-      const newTask = {
-
-        title: document.getElementById("adminTaskTitle").value,
-
-        subject: document.getElementById("adminTaskSubject").value,
-
-        dueDate: document.getElementById("adminTaskDueDate").value,
-
-        body: document.getElementById("adminTaskBody").value,
-
-        createdAt: new Date().toISOString()
-
-      };
-
-
-
-      try {
-
-        await addDoc(collection(db, "tasks"), newTask);
-
-        document.getElementById("adminTaskForm").reset();
-
-        adminModal.classList.remove("active");
-
-        alert("Task successfully published!");
-
-      } catch (err) {
-
-        alert("Failed to publish task: " + err.message);
-
-      }
-
-    });
-
-  </script>
-
-</body>
-
-</html>
+  });
+</script>
