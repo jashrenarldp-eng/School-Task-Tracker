@@ -429,9 +429,12 @@
     addDoc, 
     onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  // Officer passcode
-  const OFFICER_PASSCODE = "BSIE1-5090820261";
+  import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged,
+    signOut 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
@@ -445,6 +448,9 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  const auth = getAuth(app);
+
+  const OFFICER_EMAIL = "officer@class.com";
 
   // Firestore Offline Persistence
   enableIndexedDbPersistence(db).catch((err) => {
@@ -455,7 +461,7 @@
   const expandModal = document.getElementById("expandModal");
   const adminModal = document.getElementById("adminModal");
 
-  /*DARK MODE FEATURE*/
+  /*1. DARK MODE FEATURE*/
   const themeToggleBtn = document.getElementById("themeToggle");
 
   function applyTheme(theme) {
@@ -468,7 +474,6 @@
     }
   }
 
-  // Check saved theme or fallback to system preference
   const savedTheme = localStorage.getItem("app_theme") || 
     (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   applyTheme(savedTheme);
@@ -504,7 +509,7 @@
 
   window.addEventListener("online", updateNetworkStatus);
   window.addEventListener("offline", updateNetworkStatus);
-  updateNetworkStatus(); // Initial execution
+  updateNetworkStatus();
 
   // PWA Installation Prompt Logic
   let deferredPrompt;
@@ -526,7 +531,6 @@
     deferredPrompt = null;
   });
 
-  // Service Worker Registration for PWA caching
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("./sw.js").catch((err) => {
@@ -535,7 +539,7 @@
     });
   }
 
-  /*FIRESTORE TASK MANAGEMENT*/
+  /*3. FIRESTORE TASK MANAGEMENT*/
   function getPersonalTaskState(taskId) {
     const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
     return !!localData[taskId];
@@ -620,22 +624,39 @@
     taskGrid.appendChild(card);
   }
 
-  /*4. MODAL & ADMIN HANDLERS*/
+  /*4. AUTHENTICATION & ADMIN MODAL*/
   document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
   document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
   document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
 
-  document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
-    const enteredCode = document.getElementById("adminPasscode").value;
-    if (enteredCode === OFFICER_PASSCODE) {
+  // Monitor Authentication State
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
       document.getElementById("adminAuthStep").style.display = "none";
       document.getElementById("adminFormStep").style.display = "block";
-      document.getElementById("passcodeError").style.display = "none";
     } else {
-      document.getElementById("passcodeError").style.display = "block";
+      document.getElementById("adminAuthStep").style.display = "block";
+      document.getElementById("adminFormStep").style.display = "none";
     }
   });
 
+  // Verify Password with Firebase Auth
+  document.getElementById("btnVerifyPasscode").addEventListener("click", async () => {
+    const enteredPassword = document.getElementById("adminPasscode").value;
+    const errorDiv = document.getElementById("passcodeError");
+
+    try {
+      await signInWithEmailAndPassword(auth, OFFICER_EMAIL, enteredPassword);
+      errorDiv.style.display = "none";
+      document.getElementById("adminPasscode").value = "";
+    } catch (error) {
+      console.error("Auth Error:", error);
+      errorDiv.textContent = "Incorrect password. Try again.";
+      errorDiv.style.display = "block";
+    }
+  });
+
+  // Task Creation Handler
   document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     
