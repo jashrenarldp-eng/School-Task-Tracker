@@ -381,16 +381,40 @@
     <div class="glass-card-modal" style="max-width: 500px;">
       <button class="modal-close-btn" id="btnCloseAdmin">&times;</button>
 
-      <!-- Step 1: Passcode Verification -->
-      <div id="adminAuthStep">
-        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
-        <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
-          Enter your officer passcode to access the task publisher.
-        </p>
-        <input type="password" id="adminPasscode" class="admin-input" placeholder="Enter passcode..." style="margin-bottom: 12px;" />
-        <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">Incorrect passcode. Try again.</div>
-        <button id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">Unlock Task Maker</button>
-      </div>
+<!-- Step 1: Officer Verification -->
+<div id="adminAuthStep">
+  <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
+  <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
+    Enter your officer credentials to access the task publisher.
+  </p>
+  
+  <input 
+    type="email" 
+    id="adminEmail" 
+    class="admin-input" 
+    placeholder="officers@class.com" 
+    value="officers@class.com" 
+    style="margin-bottom: 12px;" 
+    required 
+  />
+  
+  <input 
+    type="password" 
+    id="adminPasscode" 
+    class="admin-input" 
+    placeholder="Enter password..." 
+    style="margin-bottom: 12px;" 
+    required 
+  />
+  
+  <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">
+    Invalid email or password. Access denied.
+  </div>
+  
+  <button id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">
+    Unlock Task Maker
+  </button>
+</div>
 
       <!-- Step 2: Task Form -->
       <div id="adminFormStep" style="display: none;">
