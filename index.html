@@ -762,32 +762,80 @@
 /* ==========================================
      5. NOTIFICATIONS
   ========================================== */
+  
+/*CROSS-PLATFORM NOTIFICATION SENDER*/
+function sendLocalNotification(title, body, tag) {
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    console.warn("Notifications not allowed or unsupported.");
+    return;
+  }
+
+  // Mobile / Android / iOS / PWA Support via Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        registration.showNotification(title, {
+          body: body,
+          icon: "./icon-192.png",
+          badge: "./badge.png",
+          tag: tag,
+          vibrate: [200, 100, 200]
+        });
+      })
+      .catch((err) => {
+        console.warn("Service worker notification failed, falling back to window Notification:", err);
+        new Notification(title, { body, icon: "./icon-192.png", tag });
+      });
+  } else {
+    // Desktop Fallback
+    new Notification(title, { body, icon: "./icon-192.png", tag });
+  }
+}
+
+/* ==========================================
+   USER-GESTURE PERMISSION BUTTON
+   ========================================== */
+// Attach this to a button in your UI (e.g. <button id="btnNotifPermission">🔔 Enable Alerts</button>)
+document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
+  if (!("Notification" in window)) {
+    alert("This browser does not support web notifications.");
+    return;
+  }
+  
+  const permission = await Notification.requestPermission();
+  if (permission === "granted") {
+    alert("Notifications enabled! You will be alerted when new tasks are posted.");
+    // Test notification immediately
+    sendLocalNotification("Test Alert", "Notifications are active!", "test-id");
+  } else if (permission === "denied") {
+    alert("Notifications were blocked in your browser settings. Please unblock them to receive task updates.");
+  }
+});
+
+/* ==========================================
+   UPDATED FIRESTORE REAL-TIME LISTENER
+   ========================================== */
 let isInitialLoad = true;
 
 onSnapshot(collection(db, "tasks"), (snapshot) => {
   if (!taskGrid) return;
 
-  // 1. Detect real-time additions (skips the initial page-load snapshot)
+  // Process changes
   snapshot.docChanges().forEach((change) => {
     if (change.type === "added" && !isInitialLoad) {
-      if ("Notification" in window && Notification.permission === "granted") {
-        const taskData = change.doc.data();
-        const subject = (taskData.subject || "GENERAL").toUpperCase();
-        const title = taskData.title || "New Assignment Posted";
+      const taskData = change.doc.data();
+      const subject = (taskData.subject || "GENERAL").toUpperCase();
+      const title = taskData.title || "New Task Posted";
 
-        new Notification(`📌 New Task [${subject}]`, {
-          body: title,
-          icon: "./icon-192.png", // Optional: Path to your app icon
-          tag: change.doc.id      // Prevents duplicate notifications for the same ID
-        });
-      }
+      // Trigger cross-platform notification
+      sendLocalNotification(`📌 New Task [${subject}]`, title, change.doc.id);
     }
   });
 
-  // Mark initial load as complete after processing the first snapshot
+  // Flip flag AFTER initial snapshot processes
   isInitialLoad = false;
 
-  // 2. Clear grid and re-render current tasks
+  // Render cards
   taskGrid.innerHTML = "";
 
   if (snapshot.empty) {
@@ -804,14 +852,4 @@ onSnapshot(collection(db, "tasks"), (snapshot) => {
 }, (error) => {
   console.error("Firestore Read Error: ", error);
 });
-  // Request browser permission for local notifications
-async function requestNotificationPermission() {
-  if ("Notification" in window && Notification.permission === "default") {
-    await Notification.requestPermission();
-  }
-}
-
-// Prompt permission on page load
-window.addEventListener("load", requestNotificationPermission);
-  
 </script>
