@@ -376,72 +376,72 @@
 
   </div>
 
-  <!-- Protected Admin Modal -->
-  <div id="adminModal" class="modal-overlay">
-    <div class="glass-card-modal" style="max-width: 500px;">
-      <button class="modal-close-btn" id="btnCloseAdmin">&times;</button>
+ <!-- Protected Admin Modal -->
+<div id="adminModal" class="modal-overlay">
+  <div class="glass-card-modal" style="max-width: 500px;">
+    <button class="modal-close-btn" id="btnCloseAdmin">&times;</button>
 
-<!-- Step 1: Officer Verification -->
-<div id="adminAuthStep">
-  <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
-  <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
-    Enter your officer credentials to access the task publisher.
-  </p>
-  
-  <input 
-    type="email" 
-    id="adminEmail" 
-    class="admin-input" 
-    placeholder="Enter valid Email" 
-    style="margin-bottom: 12px;" 
-    required 
-  />
-  
-  <input 
-    type="password" 
-    id="adminPasscode" 
-    class="admin-input" 
-    placeholder="Enter password..." 
-    style="margin-bottom: 12px;" 
-    required 
-  />
-  
-  <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">
-    Invalid email or password. Access denied.
-  </div>
-  
-  <button id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">
-    Unlock Task Maker
-  </button>
-</div>
-
-      <!-- Step 2: Task Form -->
-      <div id="adminFormStep" style="display: none;">
-        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">➕ Publish New Task</h2>
-        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 16px;">New tasks will instantly sync to all students' screens.</p>
-        <form id="adminTaskForm" style="display: flex; flex-direction: column; gap: 12px;">
-          <input type="text" id="adminTaskTitle" class="admin-input" placeholder="Task Title" required />
-
-          <select id="adminTaskSubject" class="admin-input" required>
-            <option value="chem">CHEM 015</option>
-            <option value="math101">MATH 101</option>
-            <option value="pathfit">PATHFIT 1</option>
-            <option value="inen">INEN 101</option>
-            <option value="geed004">GEED 004</option>
-            <option value="geed032">GEED 032</option>
-            <option value="cmpe">CMPE 011</option>
-            <option value="nstp">NSTP 1 - CWTS</option>
-          </select>
-
-          <input type="text" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" required />
-          <textarea id="adminTaskBody" class="admin-input" placeholder="Task details and instructions..." rows="3" required style="font-family: inherit;"></textarea>
-          <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
-            Publish Task to Class
-          </button>
-        </form>
+    <!-- Step 1: Officer Verification -->
+    <div id="adminAuthStep" style="display: block;">
+      <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
+      <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
+        Enter your officer credentials to access the task publisher.
+      </p>
+      
+      <input 
+        type="email" 
+        id="adminEmail" 
+        class="admin-input" 
+        placeholder="Enter valid Email" 
+        style="margin-bottom: 12px; width: 100%; box-sizing: border-box;" 
+        required 
+      />
+      
+      <input 
+        type="password" 
+        id="adminPasscode" 
+        class="admin-input" 
+        placeholder="Enter password..." 
+        style="margin-bottom: 12px; width: 100%; box-sizing: border-box;" 
+        required 
+      />
+      
+      <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">
+        Invalid email or password. Access denied.
       </div>
+      
+      <button type="button" id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">
+        Unlock Task Maker
+      </button>
+    </div>
+
+    <!-- Step 2: Task Form -->
+    <div id="adminFormStep" style="display: none;">
+      <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">➕ Publish New Task</h2>
+      <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 16px;">New tasks will instantly sync to all students' screens.</p>
+      <form id="adminTaskForm" style="display: flex; flex-direction: column; gap: 12px;">
+        <input type="text" id="adminTaskTitle" class="admin-input" placeholder="Task Title" required />
+
+        <select id="adminTaskSubject" class="admin-input" required>
+          <option value="chem">CHEM 015</option>
+          <option value="math101">MATH 101</option>
+          <option value="pathfit">PATHFIT 1</option>
+          <option value="inen">INEN 101</option>
+          <option value="geed004">GEED 004</option>
+          <option value="geed032">GEED 032</option>
+          <option value="cmpe">CMPE 011</option>
+          <option value="nstp">NSTP 1 - CWTS</option>
+        </select>
+
+        <input type="text" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" required />
+        <textarea id="adminTaskBody" class="admin-input" placeholder="Task details and instructions..." rows="3" required style="font-family: inherit;"></textarea>
+        <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
+          Publish Task to Class
+        </button>
+      </form>
     </div>
   </div>
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -660,69 +660,103 @@
     taskGrid.appendChild(card);
   }
 
-  /* ==========================================
-     4. EMAIL & PASSWORD AUTHENTICATION
-     ========================================== */
-  document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
-  
-  document.getElementById("btnAdminAccess").addEventListener("click", () => {
-    adminModal.classList.add("active");
-  });
+/* ==========================================
+   4. EMAIL & PASSWORD AUTHENTICATION
+   ========================================== */
+const ALLOWED_OFFICER_EMAIL = "officer@class.com";
 
-  // Auto sign-out when closing admin modal
-  document.getElementById("btnCloseAdmin").addEventListener("click", async () => {
+const adminAuthStep = document.getElementById("adminAuthStep");
+const adminFormStep = document.getElementById("adminFormStep");
+const passcodeError = document.getElementById("passcodeError");
+
+document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
+
+document.getElementById("btnAdminAccess").addEventListener("click", () => {
+  adminModal.classList.add("active");
+});
+
+// Helper function to switch steps
+function switchAdminStep(showForm) {
+  if (showForm) {
+    adminAuthStep.style.display = "none";
+    adminFormStep.style.display = "block";
+  } else {
+    adminAuthStep.style.display = "block";
+    adminFormStep.style.display = "none";
+  }
+}
+
+// Sign out and reset interface on close
+document.getElementById("btnCloseAdmin").addEventListener("click", async () => {
+  adminModal.classList.remove("active");
+  await signOut(auth);
+  switchAdminStep(false);
+});
+
+// Synchronize UI whenever auth state changes
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+    switchAdminStep(true);
+  } else {
+    switchAdminStep(false);
+  }
+});
+
+// Verify credentials and explicitly switch view
+document.getElementById("btnVerifyPasscode").addEventListener("click", async (e) => {
+  e.preventDefault(); // Stop any browser reloads
+  
+  const emailInput = document.getElementById("adminEmail").value.trim();
+  const passwordInput = document.getElementById("adminPasscode").value;
+
+  if (!emailInput || !passwordInput) {
+    passcodeError.textContent = "Please enter both email and password.";
+    passcodeError.style.display = "block";
+    return;
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+    
+    // Clear error message and passcode field
+    passcodeError.style.display = "none";
+    document.getElementById("adminPasscode").value = "";
+    
+    // Force view to switch immediately to Step 2
+    switchAdminStep(true);
+  } catch (error) {
+    console.error("Auth Error Code:", error.code, error.message);
+    
+    if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+      passcodeError.textContent = "Invalid email or password. Access denied.";
+    } else {
+      passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
+    }
+    passcodeError.style.display = "block";
+  }
+});
+
+// Publish Task Handler
+document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  const newTask = {
+    title: document.getElementById("adminTaskTitle").value,
+    subject: document.getElementById("adminTaskSubject").value,
+    dueDate: document.getElementById("adminTaskDueDate").value,
+    body: document.getElementById("adminTaskBody").value,
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    await addDoc(collection(db, "tasks"), newTask);
+    document.getElementById("adminTaskForm").reset();
     adminModal.classList.remove("active");
     await signOut(auth);
-  });
-
-  // Toggle modal screens based on auth state
-  onAuthStateChanged(auth, (user) => {
-    if (user && user.email === ALLOWED_OFFICER_EMAIL) {
-      document.getElementById("adminAuthStep").style.display = "none";
-      document.getElementById("adminFormStep").style.display = "block";
-    } else {
-      document.getElementById("adminAuthStep").style.display = "block";
-      document.getElementById("adminFormStep").style.display = "none";
-    }
-  });
-
-  // Sign in using inputs for Email and Password
-  document.getElementById("btnVerifyPasscode").addEventListener("click", async () => {
-    const enteredEmail = document.getElementById("adminEmail").value.trim();
-    const enteredPassword = document.getElementById("adminPasscode").value;
-    const errorDiv = document.getElementById("passcodeError");
-
-    try {
-      await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
-      errorDiv.style.display = "none";
-      document.getElementById("adminPasscode").value = "";
-    } catch (error) {
-      console.error("Auth Error:", error);
-      errorDiv.textContent = "Invalid email or password. Access denied.";
-      errorDiv.style.display = "block";
-    }
-  });
-
-  // Publish Task Handler
-  document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const newTask = {
-      title: document.getElementById("adminTaskTitle").value,
-      subject: document.getElementById("adminTaskSubject").value,
-      dueDate: document.getElementById("adminTaskDueDate").value,
-      body: document.getElementById("adminTaskBody").value,
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      await addDoc(collection(db, "tasks"), newTask);
-      document.getElementById("adminTaskForm").reset();
-      adminModal.classList.remove("active");
-      await signOut(auth);
-      alert("Task successfully published!");
-    } catch (err) {
-      alert("Failed to publish task: " + err.message);
-    }
-  });
+    switchAdminStep(false);
+    alert("Task successfully published!");
+  } catch (err) {
+    alert("Failed to publish task: " + err.message);
+  }
+});
 </script>
