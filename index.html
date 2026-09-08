@@ -516,14 +516,18 @@
         if (e.target === expandModal) expandModal.classList.remove("active");
       });
 
-      // Register Offline Service Worker
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('Offline Service Worker Active!'))
-            .catch((err) => console.error('Service Worker Registration Failed:', err));
-        });
-      }
+      // Register and Force-Update Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then((registration) => {
+        // Force the browser to check for sw.js updates
+        registration.update();
+        console.log('Service Worker updated successfully.');
+      })
+      .catch((err) => console.error('Service Worker Registration Failed:', err));
+  });
+}
 
       // PWA Install Prompt Handler
       let deferredPrompt;
