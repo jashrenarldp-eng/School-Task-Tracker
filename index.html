@@ -5,23 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Take It! Do It!</title>
   
-  <!-- Web App Manifest Link -->
   <link rel="manifest" href="./manifest.json" />
 
-  <!-- Mobile Browser Header Colors -->
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
-    /* Light Mode Variables */
     :root {
       --bg-grid: #e2e8df;
       --bg-main: #f2f5f0;
       --text-dark: #1e293b;
       --text-muted: #64748b;
       
-      /* Subject Colors */
       --color-chem: #1b4332;
       --color-math101: #e9a820;
       --color-pathfit: #6b21a8;
@@ -32,7 +28,6 @@
       --color-nstp: #111827;
     }
 
-    /* Dark Mode Variables */
     body.dark-mode {
       --bg-grid: #1e293b;
       --bg-main: #0f172a;
@@ -40,9 +35,7 @@
       --text-muted: #94a3b8;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -57,12 +50,8 @@
       color: var(--text-dark);
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
+    .container { max-width: 1100px; margin: 0 auto; }
 
-    /* Header Layout */
     .top-header {
       display: flex;
       justify-content: space-between;
@@ -72,11 +61,7 @@
       margin-bottom: 24px;
     }
 
-    .brand-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
+    .brand-section { display: flex; align-items: center; gap: 16px; }
 
     .brand-icon {
       width: 48px;
@@ -114,10 +99,7 @@
       gap: 12px;
     }
 
-    .action-pills {
-      display: flex;
-      gap: 8px;
-    }
+    .action-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
     .btn-pill {
       display: inline-flex;
@@ -131,17 +113,10 @@
       cursor: pointer;
     }
 
-    .btn-dark {
-      background-color: #1e293b;
-      color: white;
-    }
+    .btn-dark { background-color: #1e293b; color: white; }
+    .btn-light-green { background-color: #dcfce7; color: #166534; }
+    .btn-offline { background-color: #fef3c7; color: #92400e; }
 
-    .btn-light-green {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-
-    /* Subject Legend */
     .subject-legend {
       display: grid;
       grid-template-columns: repeat(4, auto);
@@ -158,25 +133,10 @@
       border-color: #334155;
     }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
-      font-weight: 800;
-    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 800; }
+    .dot { width: 10px; height: 10px; border-radius: 2px; }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-    }
-
-    /* Section Controls */
-    .controls-section {
-      margin-top: 16px;
-      margin-bottom: 24px;
-    }
+    .controls-section { margin-top: 16px; margin-bottom: 24px; }
 
     .btn-tab {
       padding: 8px 20px;
@@ -189,11 +149,7 @@
       margin-bottom: 16px;
     }
 
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      margin: 0 0 24px 0;
-    }
+    .section-desc { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 24px 0; }
 
     .section-header-bar {
       display: flex;
@@ -202,34 +158,18 @@
       margin-bottom: 12px;
     }
 
-    .section-header-bar h2 {
-      font-family: 'Georgia', serif;
-      font-size: 1.5rem;
-      margin: 0;
-    }
-
-    .btn-open-board {
-      background: white;
-      border: 1.5px solid #cbd5e1;
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
+    .section-header-bar h2 { font-family: 'Georgia', serif; font-size: 1.5rem; margin: 0; }
 
     .status-banner {
-      background-color: #dcfce7;
-      color: #166534;
       font-size: 0.8rem;
       font-weight: 600;
       padding: 8px 14px;
       border-radius: 8px;
       margin-bottom: 16px;
       display: inline-block;
+      transition: all 0.3s ease;
     }
 
-    /* Task Grid */
     .task-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -255,26 +195,11 @@
       box-shadow: 0 12px 20px -4px rgba(0, 0, 0, 0.2);
     }
 
-    .card.completed {
-      opacity: 0.55;
-    }
+    .card.completed { opacity: 0.55; }
+    .card.completed .card-title { text-decoration: line-through; }
 
-    .card.completed .card-title {
-      text-decoration: line-through;
-    }
-
-    .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
-
-    .card-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-controls { display: flex; align-items: center; gap: 8px; }
 
     .checkbox {
       width: 20px;
@@ -288,10 +213,7 @@
       margin: 0;
     }
 
-    .checkbox:checked {
-      background: white;
-    }
-
+    .checkbox:checked { background: white; }
     .checkbox:checked::after {
       content: '✓';
       position: absolute;
@@ -315,11 +237,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
-    }
-
-    .btn-expand-icon:hover {
-      background: rgba(255, 255, 255, 0.4);
     }
 
     .badge {
@@ -329,7 +246,6 @@
       font-weight: 800;
       padding: 4px 10px;
       border-radius: 999px;
-      letter-spacing: 0.02em;
     }
 
     .card-title {
@@ -340,26 +256,9 @@
       line-height: 1.3;
     }
 
-    .due-date {
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: #a3e635;
-      margin-bottom: 8px;
-    }
+    .due-date { font-size: 0.8rem; font-weight: 800; color: #a3e635; margin-bottom: 8px; }
+    .card-body { font-size: 0.82rem; line-height: 1.4; opacity: 0.9; }
 
-    .card-body {
-      font-size: 0.82rem;
-      line-height: 1.4;
-      opacity: 0.9;
-    }
-
-    .card-link {
-      color: #7dd3fc;
-      text-decoration: underline;
-      word-break: break-all;
-    }
-
-    /* Subject Themes */
     .bg-nstp { background-color: var(--color-nstp); }
     .bg-pathfit { background-color: var(--color-pathfit); }
     .bg-cmpe { background-color: var(--color-cmpe); }
@@ -369,7 +268,6 @@
     .bg-inen { background-color: var(--color-inen); }
     .bg-geed004 { background-color: var(--color-geed004); }
 
-    /* Semi-Transparent Glass Expansion Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -382,12 +280,10 @@
       padding: 20px;
     }
 
-    .modal-overlay.active {
-      display: flex;
-    }
+    .modal-overlay.active { display: flex; }
 
     .glass-card-modal {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
       backdrop-filter: blur(16px);
@@ -395,7 +291,7 @@
       border-radius: 24px;
       padding: 36px;
       width: 100%;
-      max-width: 650px;
+      max-width: 600px;
       color: white;
       position: relative;
     }
@@ -412,20 +308,22 @@
       border-radius: 50%;
       font-size: 1.2rem;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
-    .modal-close-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
+    .admin-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.9rem;
+      color: #0f172a;
+      background: white;
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    
     <header class="top-header">
       <div class="brand-section">
         <div class="brand-icon">✏️</div>
@@ -437,9 +335,10 @@
 
       <div class="header-actions">
         <div class="action-pills">
+          <button id="btnAdminAccess" class="btn-pill btn-dark">🔐 Task Maker</button>
           <button id="themeToggle" class="btn-pill btn-dark">Dark Mode</button>  
           <button id="btnInstallPWA" class="btn-pill btn-dark" style="display: none;">📥 Install App</button>
-          <div class="btn-pill btn-light-green">⚡ Connected to Firebase Cloud</div>
+          <div id="netStatusPill" class="btn-pill btn-light-green">⚡ Syncing Live</div>
         </div>
 
         <div class="subject-legend">
@@ -462,12 +361,10 @@
       <p class="eyebrow">FOR EVERYONE</p>
       <div class="section-header-bar">
         <h2>Class tasks</h2>
-        <button class="btn-open-board">Open full board</button>
       </div>
 
-      <div id="saveBanner" class="status-banner">Syncing live with Firebase Firestore...</div>
+      <div id="saveBanner" class="status-banner btn-light-green">🟢 Live Cloud Connection Active</div>
 
-      <!-- Real-Time Firebase Task Grid Container -->
       <div id="taskGrid" class="task-grid">
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; opacity: 0.7;">
           Loading real-time tasks...
@@ -476,28 +373,68 @@
     </section>
   </div>
 
-  <!-- Semi-Transparent Expand Overlay Modal -->
+  <!-- Expand Card Details Modal -->
   <div id="expandModal" class="modal-overlay">
     <div class="glass-card-modal">
       <button class="modal-close-btn" id="btnCloseExpand">&times;</button>
-      <div style="margin-bottom: 12px;">
-        <span id="expBadge" class="badge">SUBJECT</span>
-      </div>
+      <div style="margin-bottom: 12px;"><span id="expBadge" class="badge">SUBJECT</span></div>
       <h2 id="expTitle" style="font-family: 'Georgia', serif; font-size: 1.8rem; margin: 0 0 12px 0;">Task Title</h2>
       <div id="expDueDate" class="due-date" style="font-size: 1rem; margin-bottom: 16px;">Due Date</div>
       <div id="expBody" style="font-size: 1.05rem; line-height: 1.6; opacity: 0.95;">Task details...</div>
     </div>
   </div>
 
-  <!-- Local UI Handlers & PWA Service Worker -->
+  <!-- Protected Admin Modal -->
+  <div id="adminModal" class="modal-overlay">
+    <div class="glass-card-modal" style="max-width: 500px;">
+      <button class="modal-close-btn" id="btnCloseAdmin">&times;</button>
+      
+      <!-- Step 1: Passcode Verification -->
+      <div id="adminAuthStep">
+        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
+        <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
+          Enter your officer passcode to access the task publisher.
+        </p>
+        <input type="password" id="adminPasscode" class="admin-input" placeholder="Enter passcode..." style="margin-bottom: 12px;" />
+        <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">Incorrect passcode. Try again.</div>
+        <button id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">Unlock Task Maker</button>
+      </div>
+
+      <!-- Step 2: Task Form -->
+      <div id="adminFormStep" style="display: none;">
+        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">➕ Publish New Task</h2>
+        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 16px;">New tasks will instantly sync to all students' screens.</p>
+        
+        <form id="adminTaskForm" style="display: flex; flex-direction: column; gap: 12px;">
+          <input type="text" id="adminTaskTitle" class="admin-input" placeholder="Task Title" required />
+          
+          <select id="adminTaskSubject" class="admin-input" required>
+            <option value="chem">CHEM 015</option>
+            <option value="math101">MATH 101</option>
+            <option value="pathfit">PATHFIT 1</option>
+            <option value="inen">INEN 101</option>
+            <option value="geed004">GEED 004</option>
+            <option value="geed032">GEED 032</option>
+            <option value="cmpe">CMPE 011</option>
+            <option value="nstp">NSTP 1 - CWTS</option>
+          </select>
+          
+          <input type="text" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" required />
+          <textarea id="adminTaskBody" class="admin-input" placeholder="Task details and instructions..." rows="3" required style="font-family: inherit;"></textarea>
+          
+          <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
+            Publish Task to Class
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const THEME_KEY = "school-board-theme";
       const themeToggle = document.getElementById("themeToggle");
-      const expandModal = document.getElementById("expandModal");
-      const btnCloseExpand = document.getElementById("btnCloseExpand");
-
-      // Theme toggle restoration
+      
       if (localStorage.getItem(THEME_KEY) === "dark") {
         document.body.classList.add("dark-mode");
         themeToggle.textContent = "Light Mode";
@@ -510,24 +447,39 @@
         themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
       });
 
-      // Close expanded card modal
-      btnCloseExpand.addEventListener("click", () => expandModal.classList.remove("active"));
-      window.addEventListener("click", (e) => {
-        if (e.target === expandModal) expandModal.classList.remove("active");
-      });
+      // Service Worker Registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+              registration.update();
+              console.log('Service Worker updated successfully.');
+            })
+            .catch((err) => console.error('Service Worker Registration Failed:', err));
+        });
+      }
 
-      // Register and Force-Update Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then((registration) => {
-        // Force the browser to check for sw.js updates
-        registration.update();
-        console.log('Service Worker updated successfully.');
-      })
-      .catch((err) => console.error('Service Worker Registration Failed:', err));
-  });
-}
+      // Live Network Status Observer
+      const netStatusPill = document.getElementById("netStatusPill");
+      const saveBanner = document.getElementById("saveBanner");
+
+      function updateOnlineStatus() {
+        if (navigator.onLine) {
+          netStatusPill.className = "btn-pill btn-light-green";
+          netStatusPill.textContent = "⚡ Syncing Live";
+          saveBanner.className = "status-banner btn-light-green";
+          saveBanner.textContent = "🟢 Connected to Cloud Database (Auto-Sync Active)";
+        } else {
+          netStatusPill.className = "btn-pill btn-offline";
+          netStatusPill.textContent = "📦 Offline Mode";
+          saveBanner.className = "status-banner btn-offline";
+          saveBanner.textContent = "🟡 You are offline. Displaying cached tasks. Updates will auto-sync when back online.";
+        }
+      }
+
+      window.addEventListener('online', updateOnlineStatus);
+      window.addEventListener('offline', updateOnlineStatus);
+      updateOnlineStatus();
 
       // PWA Install Prompt Handler
       let deferredPrompt;
@@ -549,149 +501,163 @@ if ('serviceWorker' in navigator) {
     });
   </script>
 
-  <!-- Firebase Real-time Firestore SDK -->
-  <!-- Firebase Real-time Firestore SDK with Personal Progress Handling -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { 
-    getFirestore, 
-    enableIndexedDbPersistence, 
-    collection, 
-    addDoc, 
-    onSnapshot
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <!-- Firebase & Admin Task Publisher Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      enableIndexedDbPersistence, 
+      collection, 
+      addDoc, 
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Your Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-    authDomain: "takeitdoit-app.firebaseapp.com",
-    projectId: "takeitdoit-app",
-    storageBucket: "takeitdoit-app.firebasestorage.app",
-    messagingSenderId: "1057165971311",
-    appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-    measurementId: "G-S8PC6K718R"
-  };
+    // Set officer passcode here
+    const OFFICER_PASSCODE = "2026";
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Enable Offline Persistence for Firestore
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn('Persistence failed: Multiple tabs open.');
-    } else if (err.code === 'unimplemented') {
-      console.warn('Browser does not support offline storage.');
-    }
-  });
-
-  const taskGrid = document.getElementById("taskGrid");
-  const expandModal = document.getElementById("expandModal");
-
-  // Local Storage Helpers for Personal Task Completion
-  function getPersonalTaskState(taskId) {
-    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-    return !!localData[taskId];
-  }
-
-  function setPersonalTaskState(taskId, isCompleted) {
-    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-    localData[taskId] = isCompleted;
-    localStorage.setItem("user_task_progress", JSON.stringify(localData));
-  }
-
-  // Real-Time Firebase Listener for Global Admin Tasks
-  onSnapshot(collection(db, "tasks"), (snapshot) => {
-    taskGrid.innerHTML = "";
-
-    if (snapshot.empty) {
-      taskGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-          No tasks published by admin yet.
-        </div>`;
-      return;
-    }
-
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const taskId = docSnap.id;
-      renderTaskCard(taskId, data);
-    });
-  }, (error) => {
-    console.error("Firestore Read Error: ", error);
-    taskGrid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">
-      Error loading tasks. Please check your network connection or database rules.
-    </div>`;
-  });
-
-  // Render Card with Local Progress Binding
-  function renderTaskCard(id, data) {
-    const isCompleted = getPersonalTaskState(id);
-    const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-    
-    const card = document.createElement("div");
-    card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
-    card.setAttribute("data-id", id);
-
-    card.innerHTML = `
-      <div>
-        <div class="card-top">
-          <div class="card-controls">
-            <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
-            <button class="btn-expand-icon" title="Expand task view">⤢</button>
-          </div>
-          <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
-        </div>
-        <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-        <div class="due-date">${data.dueDate || ''}</div>
-      </div>
-      <div class="card-body">${data.body || ''}</div>
-    `;
-
-    const checkbox = card.querySelector(".checkbox");
-
-    // Toggle completion status locally on the user's device
-    const toggleCompletion = () => {
-      const newState = !getPersonalTaskState(id);
-      setPersonalTaskState(id, newState);
-      checkbox.checked = newState;
-      card.classList.toggle("completed", newState);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
+      authDomain: "takeitdoit-app.firebaseapp.com",
+      projectId: "takeitdoit-app",
+      storageBucket: "takeitdoit-app.firebasestorage.app",
+      messagingSenderId: "1057165971311",
+      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
+      measurementId: "G-S8PC6K718R"
     };
 
-    checkbox.addEventListener("change", (e) => {
-      e.stopPropagation();
-      setPersonalTaskState(id, checkbox.checked);
-      card.classList.toggle("completed", checkbox.checked);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.warn("Offline persistence status:", err.code);
     });
 
-    card.addEventListener("click", (e) => {
-      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
-      toggleCompletion();
-    });
+    const taskGrid = document.getElementById("taskGrid");
+    const expandModal = document.getElementById("expandModal");
+    const adminModal = document.getElementById("adminModal");
 
-    // Expand Modal
-    const expandBtn = card.querySelector(".btn-expand-icon");
-    expandBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-      document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-      document.getElementById("expDueDate").textContent = data.dueDate || '';
-      document.getElementById("expBody").innerHTML = data.body || '';
-      expandModal.classList.add("active");
-    });
-
-    taskGrid.appendChild(card);
-  }
-
-  // Admin function to publish a new task to all users
-  window.addNewTaskToCloud = async function(taskObject) {
-    try {
-      await addDoc(collection(db, "tasks"), taskObject);
-      console.log("Task successfully published to Cloud Firestore!");
-    } catch (err) {
-      console.error("Failed to add task: ", err);
+    function getPersonalTaskState(taskId) {
+      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+      return !!localData[taskId];
     }
-  };
-</script>
+
+    function setPersonalTaskState(taskId, isCompleted) {
+      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+      localData[taskId] = isCompleted;
+      localStorage.setItem("user_task_progress", JSON.stringify(localData));
+    }
+
+    onSnapshot(collection(db, "tasks"), (snapshot) => {
+      taskGrid.innerHTML = "";
+
+      if (snapshot.empty) {
+        taskGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+            No tasks published by officers yet.
+          </div>`;
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        renderTaskCard(docSnap.id, docSnap.data());
+      });
+    }, (error) => {
+      console.error("Firestore Read Error: ", error);
+    });
+
+    function renderTaskCard(id, data) {
+      const isCompleted = getPersonalTaskState(id);
+      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
+      
+      const card = document.createElement("div");
+      card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
+      card.setAttribute("data-id", id);
+
+      card.innerHTML = `
+        <div>
+          <div class="card-top">
+            <div class="card-controls">
+              <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
+              <button class="btn-expand-icon" title="Expand task view">⤢</button>
+            </div>
+            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+          </div>
+          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+          <div class="due-date">${data.dueDate || ''}</div>
+        </div>
+        <div class="card-body">${data.body || ''}</div>
+      `;
+
+      const checkbox = card.querySelector(".checkbox");
+
+      const toggleCompletion = () => {
+        const newState = !getPersonalTaskState(id);
+        setPersonalTaskState(id, newState);
+        checkbox.checked = newState;
+        card.classList.toggle("completed", newState);
+      };
+
+      checkbox.addEventListener("change", (e) => {
+        e.stopPropagation();
+        setPersonalTaskState(id, checkbox.checked);
+        card.classList.toggle("completed", checkbox.checked);
+      });
+
+      card.addEventListener("click", (e) => {
+        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
+        toggleCompletion();
+      });
+
+      card.querySelector(".btn-expand-icon").addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+        document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+        document.getElementById("expDueDate").textContent = data.dueDate || '';
+        document.getElementById("expBody").innerHTML = data.body || '';
+        expandModal.classList.add("active");
+      });
+
+      taskGrid.appendChild(card);
+    }
+
+    // Modal Control Events
+    document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
+    document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
+    document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
+
+    // Passcode Verification Handler
+    document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
+      const enteredCode = document.getElementById("adminPasscode").value;
+      if (enteredCode === OFFICER_PASSCODE) {
+        document.getElementById("adminAuthStep").style.display = "none";
+        document.getElementById("adminFormStep").style.display = "block";
+        document.getElementById("passcodeError").style.display = "none";
+      } else {
+        document.getElementById("passcodeError").style.display = "block";
+      }
+    });
+
+    // Task Creation Handler
+    document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const newTask = {
+        title: document.getElementById("adminTaskTitle").value,
+        subject: document.getElementById("adminTaskSubject").value,
+        dueDate: document.getElementById("adminTaskDueDate").value,
+        body: document.getElementById("adminTaskBody").value,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        await addDoc(collection(db, "tasks"), newTask);
+        document.getElementById("adminTaskForm").reset();
+        adminModal.classList.remove("active");
+        alert("Task successfully published!");
+      } catch (err) {
+        alert("Failed to publish task: " + err.message);
+      }
+    });
+  </script>
 </body>
 </html>
