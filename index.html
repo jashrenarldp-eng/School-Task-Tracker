@@ -758,4 +758,60 @@
       alert("Failed to publish task: " + err.message);
     }
   });
+  
+/* ==========================================
+     5. NOTIFICATIONS
+  ========================================== */
+let isInitialLoad = true;
+
+onSnapshot(collection(db, "tasks"), (snapshot) => {
+  if (!taskGrid) return;
+
+  // 1. Detect real-time additions (skips the initial page-load snapshot)
+  snapshot.docChanges().forEach((change) => {
+    if (change.type === "added" && !isInitialLoad) {
+      if ("Notification" in window && Notification.permission === "granted") {
+        const taskData = change.doc.data();
+        const subject = (taskData.subject || "GENERAL").toUpperCase();
+        const title = taskData.title || "New Assignment Posted";
+
+        new Notification(`📌 New Task [${subject}]`, {
+          body: title,
+          icon: "./icon-192.png", // Optional: Path to your app icon
+          tag: change.doc.id      // Prevents duplicate notifications for the same ID
+        });
+      }
+    }
+  });
+
+  // Mark initial load as complete after processing the first snapshot
+  isInitialLoad = false;
+
+  // 2. Clear grid and re-render current tasks
+  taskGrid.innerHTML = "";
+
+  if (snapshot.empty) {
+    taskGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+        No tasks published by officers yet.
+      </div>`;
+    return;
+  }
+
+  snapshot.forEach((docSnap) => {
+    renderTaskCard(docSnap.id, docSnap.data());
+  });
+}, (error) => {
+  console.error("Firestore Read Error: ", error);
+});
+  // Request browser permission for local notifications
+async function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+}
+
+// Prompt permission on page load
+window.addEventListener("load", requestNotificationPermission);
+  
 </script>
