@@ -310,7 +310,7 @@
       cursor: pointer;
     }
 
-    .admin-input {
+    .admin-input, .admin-select, .admin-textarea {
       width: 100%;
       padding: 12px;
       border-radius: 8px;
@@ -318,6 +318,18 @@
       font-size: 0.9rem;
       color: #0f172a;
       background: white;
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+
+    .admin-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.9;
     }
   </style>
 </head>
@@ -395,269 +407,246 @@
         <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
           Enter your officer passcode to access the task publisher.
         </p>
-        <input type="password" id="adminPasscode" class="admin-input" placeholder="Enter passcode..." style="margin-bottom: 12px;" />
+        <input type="password" id="adminPasscode" class="admin-input" placeholder="Enter passcode..." />
         <div id="passcodeError" style="color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none;">Incorrect passcode. Try again.</div>
         <button id="btnVerifyPasscode" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">Unlock Task Maker</button>
       </div>
 
-      <!-- Step 2: Task Form -->
-      <div id="adminFormStep" style="display: none;">
-        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">➕ Publish New Task</h2>
-        <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 16px;">New tasks will instantly sync to all students' screens.</p>
+      <!-- Step 2: Create Task Form -->
+      <div id="adminTaskFormStep" style="display: none;">
+        <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">✨ Publish Class Task</h2>
         
-        <form id="adminTaskForm" style="display: flex; flex-direction: column; gap: 12px;">
-          <input type="text" id="adminTaskTitle" class="admin-input" placeholder="Task Title" required />
-          
-          <select id="adminTaskSubject" class="admin-input" required>
-            <option value="chem">CHEM 015</option>
-            <option value="math101">MATH 101</option>
-            <option value="pathfit">PATHFIT 1</option>
-            <option value="inen">INEN 101</option>
-            <option value="geed004">GEED 004</option>
-            <option value="geed032">GEED 032</option>
-            <option value="cmpe">CMPE 011</option>
-            <option value="nstp">NSTP 1 - CWTS</option>
-          </select>
-          
-          <input type="text" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" required />
-          <textarea id="adminTaskBody" class="admin-input" placeholder="Task details and instructions..." rows="3" required style="font-family: inherit;"></textarea>
-          
-          <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
-            Publish Task to Class
-          </button>
-        </form>
+        <label class="admin-label">Subject</label>
+        <select id="taskSubject" class="admin-select">
+          <option value="CHEM 015">CHEM 015</option>
+          <option value="MATH 101">MATH 101</option>
+          <option value="PATHFIT 1">PATHFIT 1</option>
+          <option value="INEN 101">INEN 101</option>
+          <option value="GEED 004">GEED 004</option>
+          <option value="GEED 032">GEED 032</option>
+          <option value="CMPE 011">CMPE 011</option>
+          <option value="NSTP 1 - CWTS">NSTP 1 - CWTS</option>
+        </select>
+
+        <label class="admin-label">Task Title</label>
+        <input type="text" id="taskTitleInput" class="admin-input" placeholder="e.g. Problem Set 1" />
+
+        <label class="admin-label">Due Date</label>
+        <input type="text" id="taskDueDateInput" class="admin-input" placeholder="e.g. Friday, Sept 12 @ 11:59 PM" />
+
+        <label class="admin-label">Details / Instructions</label>
+        <textarea id="taskDetailsInput" class="admin-textarea" rows="4" placeholder="Enter task instructions or submission details..."></textarea>
+
+        <button id="btnPublishTask" class="btn-pill btn-dark" style="width: 100%; justify-content: center; padding: 12px;">Publish Task</button>
       </div>
     </div>
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const THEME_KEY = "school-board-theme";
-      const themeToggle = document.getElementById("themeToggle");
-      
-      if (localStorage.getItem(THEME_KEY) === "dark") {
-        document.body.classList.add("dark-mode");
-        themeToggle.textContent = "Light Mode";
-      }
-
-      themeToggle.addEventListener("click", () => {
-        document.body.classList.toggle("dark-mode");
-        const isDark = document.body.classList.contains("dark-mode");
-        localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
-        themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
-      });
-
-      // Service Worker Registration
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then((registration) => {
-              registration.update();
-              console.log('Service Worker updated successfully.');
-            })
-            .catch((err) => console.error('Service Worker Registration Failed:', err));
-        });
-      }
-
-      // Live Network Status Observer
-      const netStatusPill = document.getElementById("netStatusPill");
-      const saveBanner = document.getElementById("saveBanner");
-
-      function updateOnlineStatus() {
-        if (navigator.onLine) {
-          netStatusPill.className = "btn-pill btn-light-green";
-          netStatusPill.textContent = "⚡ Syncing Live";
-          saveBanner.className = "status-banner btn-light-green";
-          saveBanner.textContent = "🟢 Connected to Cloud Database (Auto-Sync Active)";
-        } else {
-          netStatusPill.className = "btn-pill btn-offline";
-          netStatusPill.textContent = "📦 Offline Mode";
-          saveBanner.className = "status-banner btn-offline";
-          saveBanner.textContent = "🟡 You are offline. Displaying cached tasks. Updates will auto-sync when back online.";
-        }
-      }
-
-      window.addEventListener('online', updateOnlineStatus);
-      window.addEventListener('offline', updateOnlineStatus);
-      updateOnlineStatus();
-
-      // PWA Install Prompt Handler
-      let deferredPrompt;
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        const installBtn = document.getElementById("btnInstallPWA");
-        if (installBtn) {
-          installBtn.style.display = "inline-flex";
-          installBtn.addEventListener("click", async () => {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to install prompt: ${outcome}`);
-            deferredPrompt = null;
-            installBtn.style.display = "none";
-          });
-        }
-      });
-    });
-  </script>
-
-  <!-- Firebase & Admin Task Publisher Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, 
-      enableIndexedDbPersistence, 
-      collection, 
-      addDoc, 
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // Set officer passcode here
-    const OFFICER_PASSCODE = "BSIE1-5090820261";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-      authDomain: "takeitdoit-app.firebaseapp.com",
-      projectId: "takeitdoit-app",
-      storageBucket: "takeitdoit-app.firebasestorage.app",
-      messagingSenderId: "1057165971311",
-      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-      measurementId: "G-S8PC6K718R"
+    // --- Subject Class Mapping ---
+    const subjectClassMap = {
+      'CHEM 015': 'bg-chem',
+      'MATH 101': 'bg-math101',
+      'PATHFIT 1': 'bg-pathfit',
+      'INEN 101': 'bg-inen',
+      'GEED 004': 'bg-geed004',
+      'GEED 032': 'bg-geed032',
+      'CMPE 011': 'bg-cmpe',
+      'NSTP 1 - CWTS': 'bg-nstp'
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // --- Initial / Stored Tasks ---
+    const initialTasks = [
+      {
+        id: '1',
+        subject: 'MATH 101',
+        title: 'Problem Set 1: Differential Equations',
+        dueDate: 'Sept 15, 2026',
+        details: 'Complete problems 1 through 15 on page 42. Submit PDF format on Google Classroom.',
+        completed: false
+      },
+      {
+        id: '2',
+        subject: 'CHEM 015',
+        title: 'Lab Report: Stoichiometry & Yields',
+        dueDate: 'Sept 18, 2026',
+        details: 'Include error analysis section and signed lab notes.',
+        completed: false
+      }
+    ];
 
-    enableIndexedDbPersistence(db).catch((err) => {
-      console.warn("Offline persistence status:", err.code);
-    });
+    let tasks = JSON.parse(localStorage.getItem('takeit_doit_tasks')) || initialTasks;
 
-    const taskGrid = document.getElementById("taskGrid");
-    const expandModal = document.getElementById("expandModal");
-    const adminModal = document.getElementById("adminModal");
+    // --- DOM Elements ---
+    const taskGrid = document.getElementById('taskGrid');
+    const themeToggle = document.getElementById('themeToggle');
+    const btnAdminAccess = document.getElementById('btnAdminAccess');
+    const adminModal = document.getElementById('adminModal');
+    const btnCloseAdmin = document.getElementById('btnCloseAdmin');
+    const adminAuthStep = document.getElementById('adminAuthStep');
+    const adminTaskFormStep = document.getElementById('adminTaskFormStep');
+    const adminPasscode = document.getElementById('adminPasscode');
+    const passcodeError = document.getElementById('passcodeError');
+    const btnVerifyPasscode = document.getElementById('btnVerifyPasscode');
+    const btnPublishTask = document.getElementById('btnPublishTask');
 
-    function getPersonalTaskState(taskId) {
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-      return !!localData[taskId];
-    }
+    const expandModal = document.getElementById('expandModal');
+    const btnCloseExpand = document.getElementById('btnCloseExpand');
+    const expBadge = document.getElementById('expBadge');
+    const expTitle = document.getElementById('expTitle');
+    const expDueDate = document.getElementById('expDueDate');
+    const expBody = document.getElementById('expBody');
 
-    function setPersonalTaskState(taskId, isCompleted) {
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-      localData[taskId] = isCompleted;
-      localStorage.setItem("user_task_progress", JSON.stringify(localData));
-    }
-
-    onSnapshot(collection(db, "tasks"), (snapshot) => {
-      taskGrid.innerHTML = "";
-
-      if (snapshot.empty) {
-        taskGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-            No tasks published by officers yet.
-          </div>`;
+    // --- Render Tasks ---
+    function renderTasks() {
+      taskGrid.innerHTML = '';
+      if (tasks.length === 0) {
+        taskGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; opacity: 0.7;">No tasks active right now!</div>`;
         return;
       }
 
-      snapshot.forEach((docSnap) => {
-        renderTaskCard(docSnap.id, docSnap.data());
-      });
-    }, (error) => {
-      console.error("Firestore Read Error: ", error);
-    });
-
-    function renderTaskCard(id, data) {
-      const isCompleted = getPersonalTaskState(id);
-      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-      
-      const card = document.createElement("div");
-      card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
-      card.setAttribute("data-id", id);
-
-      card.innerHTML = `
-        <div>
-          <div class="card-top">
-            <div class="card-controls">
-              <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
-              <button class="btn-expand-icon" title="Expand task view">⤢</button>
+      tasks.forEach(task => {
+        const bgClass = subjectClassMap[task.subject] || 'bg-cmpe';
+        const card = document.createElement('div');
+        card.className = `card ${bgClass} ${task.completed ? 'completed' : ''}`;
+        
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <span class="badge">${task.subject}</span>
+              <div class="card-controls">
+                <input type="checkbox" class="checkbox" ${task.completed ? 'checked' : ''} data-id="${task.id}" onclick="event.stopPropagation()" />
+                <button class="btn-expand-icon" data-id="${task.id}">⤢</button>
+              </div>
             </div>
-            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+            <h3 class="card-title">${task.title}</h3>
+            <div class="due-date">📅 Due: ${task.dueDate}</div>
           </div>
-          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-          <div class="due-date">${data.dueDate || ''}</div>
-        </div>
-        <div class="card-body">${data.body || ''}</div>
-      `;
+          <div class="card-body">${task.details}</div>
+        `;
 
-      const checkbox = card.querySelector(".checkbox");
+        // Checkbox event
+        const cb = card.querySelector('.checkbox');
+        cb.addEventListener('change', (e) => {
+          task.completed = e.target.checked;
+          saveAndRender();
+        });
 
-      const toggleCompletion = () => {
-        const newState = !getPersonalTaskState(id);
-        setPersonalTaskState(id, newState);
-        checkbox.checked = newState;
-        card.classList.toggle("completed", newState);
-      };
+        // Expand click
+        card.addEventListener('click', () => openExpandModal(task));
 
-      checkbox.addEventListener("change", (e) => {
-        e.stopPropagation();
-        setPersonalTaskState(id, checkbox.checked);
-        card.classList.toggle("completed", checkbox.checked);
+        taskGrid.appendChild(card);
       });
-
-      card.addEventListener("click", (e) => {
-        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
-        toggleCompletion();
-      });
-
-      card.querySelector(".btn-expand-icon").addEventListener("click", (e) => {
-        e.stopPropagation();
-        document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-        document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-        document.getElementById("expDueDate").textContent = data.dueDate || '';
-        document.getElementById("expBody").innerHTML = data.body || '';
-        expandModal.classList.add("active");
-      });
-
-      taskGrid.appendChild(card);
     }
 
-    // Modal Control Events
-    document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
-    document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
-    document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
+    function saveAndRender() {
+      localStorage.setItem('takeit_doit_tasks', JSON.stringify(tasks));
+      renderTasks();
+    }
 
-    // Passcode Verification Handler
-    document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
-      const enteredCode = document.getElementById("adminPasscode").value;
-      if (enteredCode === OFFICER_PASSCODE) {
-        document.getElementById("adminAuthStep").style.display = "none";
-        document.getElementById("adminFormStep").style.display = "block";
-        document.getElementById("passcodeError").style.display = "none";
+    // --- Modal Logic ---
+    function openExpandModal(task) {
+      expBadge.textContent = task.subject;
+      expTitle.textContent = task.title;
+      expDueDate.textContent = `📅 Due: ${task.dueDate}`;
+      expBody.textContent = task.details;
+      expandModal.classList.add('active');
+    }
+
+    btnCloseExpand.addEventListener('click', () => expandModal.classList.remove('active'));
+
+    btnAdminAccess.addEventListener('click', () => {
+      adminAuthStep.style.display = 'block';
+      adminTaskFormStep.style.display = 'none';
+      adminPasscode.value = '';
+      passcodeError.style.display = 'none';
+      adminModal.classList.add('active');
+    });
+
+    btnCloseAdmin.addEventListener('click', () => adminModal.classList.remove('active'));
+
+    // Officer Passcode (default set to 'officer123')
+    btnVerifyPasscode.addEventListener('click', () => {
+      if (adminPasscode.value === 'officer123') {
+        adminAuthStep.style.display = 'none';
+        adminTaskFormStep.style.display = 'block';
       } else {
-        document.getElementById("passcodeError").style.display = "block";
+        passcodeError.style.display = 'block';
       }
     });
 
-    // Task Creation Handler
-    document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
+    // Create New Task
+    btnPublishTask.addEventListener('click', () => {
+      const subject = document.getElementById('taskSubject').value;
+      const title = document.getElementById('taskTitleInput').value.trim();
+      const dueDate = document.getElementById('taskDueDateInput').value.trim();
+      const details = document.getElementById('taskDetailsInput').value.trim();
+
+      if (!title || !dueDate) {
+        alert('Please fill in at least the Title and Due Date.');
+        return;
+      }
+
       const newTask = {
-        title: document.getElementById("adminTaskTitle").value,
-        subject: document.getElementById("adminTaskSubject").value,
-        dueDate: document.getElementById("adminTaskDueDate").value,
-        body: document.getElementById("adminTaskBody").value,
-        createdAt: new Date().toISOString()
+        id: Date.now().toString(),
+        subject,
+        title,
+        dueDate,
+        details: details || 'No additional details provided.',
+        completed: false
       };
 
-      try {
-        await addDoc(collection(db, "tasks"), newTask);
-        document.getElementById("adminTaskForm").reset();
-        adminModal.classList.remove("active");
-        alert("Task successfully published!");
-      } catch (err) {
-        alert("Failed to publish task: " + err.message);
+      tasks.unshift(newTask);
+      saveAndRender();
+      adminModal.classList.remove('active');
+
+      // Clear inputs
+      document.getElementById('taskTitleInput').value = '';
+      document.getElementById('taskDueDateInput').value = '';
+      document.getElementById('taskDetailsInput').value = '';
+    });
+
+    // Close Modals on Outer Click
+    window.addEventListener('click', (e) => {
+      if (e.target === adminModal) adminModal.classList.remove('active');
+      if (e.target === expandModal) expandModal.classList.remove('active');
+    });
+
+    // --- Theme Toggle ---
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+      localStorage.setItem('takeit_doit_theme', isDark ? 'dark' : 'light');
+    });
+
+    if (localStorage.getItem('takeit_doit_theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+      themeToggle.textContent = 'Light Mode';
+    }
+
+    // --- PWA Installation ---
+    let deferredPrompt;
+    const btnInstallPWA = document.getElementById('btnInstallPWA');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btnInstallPWA.style.display = 'inline-flex';
+    });
+
+    btnInstallPWA.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          btnInstallPWA.style.display = 'none';
+          deferredPrompt = null;
+        });
       }
     });
+
+    // Initial Render
+    renderTasks();
   </script>
 </body>
 </html>
