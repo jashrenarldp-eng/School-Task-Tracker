@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Take It! Do It!</title>
   
-<!-- Web App Manifest Link -->
-<link rel="manifest" href="./manifest.json" />
+  <!-- Web App Manifest Link -->
+  <link rel="manifest" href="./manifest.json" />
 
-<!-- Mobile Browser Header Colors -->
-<meta name="theme-color" content="#0f172a" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- Mobile Browser Header Colors -->
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
     /* Light Mode Variables */
@@ -359,24 +359,15 @@
       word-break: break-all;
     }
 
-    /* Empty Placeholders */
-    .card-empty {
-      background: rgba(255, 255, 255, 0.8);
-      border: 2px dashed #cbd5e1;
-      box-shadow: none;
-    }
-
-    body.dark-mode .card-empty {
-      background: rgba(30, 41, 59, 0.5);
-      border-color: #334155;
-    }
-
     /* Subject Themes */
     .bg-nstp { background-color: var(--color-nstp); }
     .bg-pathfit { background-color: var(--color-pathfit); }
     .bg-cmpe { background-color: var(--color-cmpe); }
     .bg-geed032 { background-color: var(--color-geed032); }
     .bg-math101 { background-color: var(--color-math101); }
+    .bg-chem { background-color: var(--color-chem); }
+    .bg-inen { background-color: var(--color-inen); }
+    .bg-geed004 { background-color: var(--color-geed004); }
 
     /* Semi-Transparent Glass Expansion Modal */
     .modal-overlay {
@@ -447,7 +438,8 @@
       <div class="header-actions">
         <div class="action-pills">
           <button id="themeToggle" class="btn-pill btn-dark">Dark Mode</button>  
-          <div class="btn-pill btn-light-green">🔒 Personal tasks stay on this device</div>
+          <button id="btnInstallPWA" class="btn-pill btn-dark" style="display: none;">📥 Install App</button>
+          <div class="btn-pill btn-light-green">⚡ Connected to Firebase Cloud</div>
         </div>
 
         <div class="subject-legend">
@@ -473,87 +465,13 @@
         <button class="btn-open-board">Open full board</button>
       </div>
 
-      <div id="saveBanner" class="status-banner">Saved on this device.</div>
+      <div id="saveBanner" class="status-banner">Syncing live with Firebase Firestore...</div>
 
+      <!-- Real-Time Firebase Task Grid Container -->
       <div id="taskGrid" class="task-grid">
-        
-        <div class="card bg-nstp" data-id="task-1">
-          <div>
-            <div class="card-top">
-              <div class="card-controls">
-                <input type="checkbox" class="checkbox" />
-                <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              </div>
-              <span class="badge">NSTP 1 - CWTS</span>
-            </div>
-            <h3 class="card-title">NSTP 1: Attend NSTP Orientation on September 6</h3>
-            <div class="due-date">Due on December 22, 2026 @12AM</div>
-          </div>
-          <div class="card-body">
-            <a href="https://forms.gle/n2wWsEeUFlyuUvw9" target="_blank" class="card-link" onclick="event.stopPropagation()">https://forms.gle/n2wWsEeUFlyuUvw9</a>
-          </div>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; opacity: 0.7;">
+          Loading real-time tasks...
         </div>
-
-        <div class="card bg-pathfit" data-id="task-2">
-          <div>
-            <div class="card-top">
-              <div class="card-controls">
-                <input type="checkbox" class="checkbox" />
-                <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              </div>
-              <span class="badge">PATHFIT 1</span>
-            </div>
-            <h3 class="card-title">Pathfit Group Collage</h3>
-            <div class="due-date">September 4, 2026, @12AM</div>
-          </div>
-          <div class="card-body">Refer to your respective groups.</div>
-        </div>
-
-        <div class="card bg-cmpe" data-id="task-3">
-          <div>
-            <div class="card-top">
-              <div class="card-controls">
-                <input type="checkbox" class="checkbox" />
-                <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              </div>
-              <span class="badge">CMPE 011</span>
-            </div>
-            <h3 class="card-title">CMPE GROUPINGS</h3>
-            <div class="due-date">September 11, 2026</div>
-          </div>
-          <div class="card-body">Form a group and answer the google form sent by our professor.</div>
-        </div>
-
-        <div class="card bg-geed032" data-id="task-4">
-          <div>
-            <div class="card-top">
-              <div class="card-controls">
-                <input type="checkbox" class="checkbox" />
-                <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              </div>
-              <span class="badge">GEED 032</span>
-            </div>
-            <h3 class="card-title">Kabanata 1: Panimulang Gawain</h3>
-            <div class="due-date">Due on September 9, 2026</div>
-          </div>
-          <div class="card-body">Gawin ang Panimulang Gawain sa Module na ibinahagi ng ating propesor. Ito ay matatagpuan sa Kabanata 1.</div>
-        </div>
-
-        <div class="card bg-math101" data-id="task-5">
-          <div>
-            <div class="card-top">
-              <div class="card-controls">
-                <input type="checkbox" class="checkbox" />
-                <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              </div>
-              <span class="badge">MATH 101</span>
-            </div>
-            <h3 class="card-title">Read Lesson 1.3 to 1.4</h3>
-            <div class="due-date">Due on September 7, 2026 @4PM</div>
-          </div> 
-          <div class="card-body">Read and understand the concepts of Lesson 1.3: Limit Theorems and Lesson 1.4: One-Sided Limits.</div>                                                        
-        </div>
-
       </div>
     </section>
   </div>
@@ -571,15 +489,13 @@
     </div>
   </div>
 
+  <!-- Local UI Handlers & PWA Service Worker -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const STORAGE_KEY = "school-board-task-state";
       const THEME_KEY = "school-board-theme";
-
       const themeToggle = document.getElementById("themeToggle");
       const expandModal = document.getElementById("expandModal");
       const btnCloseExpand = document.getElementById("btnCloseExpand");
-      const cards = document.querySelectorAll(".card[data-id]");
 
       // Theme toggle restoration
       if (localStorage.getItem(THEME_KEY) === "dark") {
@@ -594,178 +510,170 @@
         themeToggle.textContent = isDark ? "Light Mode" : "Dark Mode";
       });
 
-      // Load task check status
-      let savedState = {};
-      try {
-        savedState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-      } catch (e) {
-        savedState = {};
-      }
-
-      cards.forEach(card => {
-        const id = card.getAttribute("data-id");
-        const checkbox = card.querySelector(".checkbox");
-        const expandBtn = card.querySelector(".btn-expand-icon");
-
-        if (savedState[id]) {
-          card.classList.add("completed");
-          if (checkbox) checkbox.checked = true;
-        }
-
-        // Toggle task completion on card click
-        card.addEventListener("click", (e) => {
-          if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon")) return;
-          
-          const isChecked = !card.classList.contains("completed");
-          card.classList.toggle("completed", isChecked);
-          if (checkbox) checkbox.checked = isChecked;
-
-          savedState[id] = isChecked;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
-        });
-
-        if (checkbox) {
-          checkbox.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const isChecked = checkbox.checked;
-            card.classList.toggle("completed", isChecked);
-            savedState[id] = isChecked;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
-          });
-        }
-
-        // Expand button logic
-        if (expandBtn) {
-          expandBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            document.getElementById("expBadge").textContent = card.querySelector(".badge").textContent;
-            document.getElementById("expTitle").textContent = card.querySelector(".card-title").textContent;
-            document.getElementById("expDueDate").textContent = card.querySelector(".due-date").textContent;
-            document.getElementById("expBody").innerHTML = card.querySelector(".card-body").innerHTML;
-            
-            expandModal.classList.add("active");
-          });
-        }
-      });
-
       // Close expanded card modal
       btnCloseExpand.addEventListener("click", () => expandModal.classList.remove("active"));
       window.addEventListener("click", (e) => {
         if (e.target === expandModal) expandModal.classList.remove("active");
       });
-      
+
+      // Register Offline Service Worker
       if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('Offline Service Worker Active!'))
-      .catch((err) => console.error('Service Worker Registration Failed:', err));
-  });
-}
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('Offline Service Worker Active!'))
+            .catch((err) => console.error('Service Worker Registration Failed:', err));
+        });
+      }
+
+      // PWA Install Prompt Handler
+      let deferredPrompt;
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById("btnInstallPWA");
+        if (installBtn) {
+          installBtn.style.display = "inline-flex";
+          installBtn.addEventListener("click", async () => {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.style.display = "none";
+          });
+        }
+      });
     });
   </script>
+
+  <!-- Firebase Real-time Firestore SDK -->
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { 
-    getFirestore, 
-    enableIndexedDbPersistence, 
-    collection, 
-    onSnapshot 
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      enableIndexedDbPersistence, 
+      collection, 
+      addDoc, 
+      onSnapshot,
+      doc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+    // Your exact Firebase configuration credentials
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
+      authDomain: "takeitdoit-app.firebaseapp.com",
+      projectId: "takeitdoit-app",
+      storageBucket: "takeitdoit-app.firebasestorage.app",
+      messagingSenderId: "1057165971311",
+      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
+      measurementId: "G-S8PC6K718R"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    // Initialize Firebase & Cloud Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // Enable Offline Persistence for Firebase
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.log('Persistence failed: Multiple tabs open at once.');
-    } else if (err.code === 'unimplemented') {
-      console.log('Browser does not support offline storage.');
-    }
-  });
-
-  // Real-time Automatic Update Listener
-  onSnapshot(collection(db, "tasks"), (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        console.log("New task automatically received: ", change.doc.data());
-        // UI rendering logic goes here
+    // Enable Offline Persistence for Firebase Firestore
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Persistence failed: Multiple browser tabs open.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('Browser does not support offline storage.');
       }
     });
-    
-    let deferredPrompt;
 
-// 1. Listen for the browser's install event
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault(); // Prevent automatic banner from showing immediately
-  deferredPrompt = e;  // Save the event for when the user clicks an install button
-  
-  // Show a custom "Install App" button in your UI
-  const installBtn = document.getElementById("btnInstallPWA");
-  if (installBtn) {
-    installBtn.style.display = "inline-flex";
-    
-    installBtn.addEventListener("click", async () => {
-      deferredPrompt.prompt(); // Trigger the native install dialog
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to install prompt: ${outcome}`);
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-    });
-  }
-});
-  });
-</script>
-  
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { 
-    getFirestore, 
-    enableIndexedDbPersistence, 
-    collection, 
-    onSnapshot 
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    const taskGrid = document.getElementById("taskGrid");
+    const expandModal = document.getElementById("expandModal");
 
-  const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+    // Real-Time Firebase Listener
+    // Automatically renders task cards dynamically whenever Firestore updates
+    onSnapshot(collection(db, "tasks"), (snapshot) => {
+      taskGrid.innerHTML = ""; // Clear task container for fresh render
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Enable Offline Persistence for Firebase
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.log('Persistence failed: Multiple tabs open at once.');
-    } else if (err.code === 'unimplemented') {
-      console.log('Browser does not support offline storage.');
-    }
-  });
-
-  // Real-time Automatic Update Listener
-  onSnapshot(collection(db, "tasks"), (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-      if (change.type === "added") {
-        console.log("New task automatically received: ", change.doc.data());
-        // UI rendering logic goes here
+      if (snapshot.empty) {
+        taskGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+            No tasks found in cloud database. Add tasks to your <strong>tasks</strong> Firestore collection!
+          </div>`;
+        return;
       }
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const taskId = docSnap.id;
+        renderTaskCard(taskId, data);
+      });
+    }, (error) => {
+      console.error("Firestore Read Error: ", error);
+      taskGrid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">
+        Error loading cloud database. Make sure your Firestore Rules permit access.
+      </div>`;
     });
-  });
-</script>
-  
+
+    // Function to construct and render individual Task Cards
+    function renderTaskCard(id, data) {
+      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
+      const card = document.createElement("div");
+      card.className = `card ${subjectClass} ${data.completed ? 'completed' : ''}`;
+      card.setAttribute("data-id", id);
+
+      card.innerHTML = `
+        <div>
+          <div class="card-top">
+            <div class="card-controls">
+              <input type="checkbox" class="checkbox" ${data.completed ? 'checked' : ''} />
+              <button class="btn-expand-icon" title="Expand task view">⤢</button>
+            </div>
+            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+          </div>
+          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+          <div class="due-date">${data.dueDate || ''}</div>
+        </div>
+        <div class="card-body">${data.body || ''}</div>
+      `;
+
+      // Checkbox click handler (Sync completion status to Firebase)
+      const checkbox = card.querySelector(".checkbox");
+      checkbox.addEventListener("change", async (e) => {
+        e.stopPropagation();
+        const taskRef = doc(db, "tasks", id);
+        await updateDoc(taskRef, {
+          completed: checkbox.checked
+        });
+      });
+
+      // Card click handler (Toggle completed)
+      card.addEventListener("click", async (e) => {
+        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
+        const taskRef = doc(db, "tasks", id);
+        await updateDoc(taskRef, {
+          completed: !data.completed
+        });
+      });
+
+      // Expand Modal Handler
+      const expandBtn = card.querySelector(".btn-expand-icon");
+      expandBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+        document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+        document.getElementById("expDueDate").textContent = data.dueDate || '';
+        document.getElementById("expBody").innerHTML = data.body || '';
+        expandModal.classList.add("active");
+      });
+
+      taskGrid.appendChild(card);
+    }
+
+    // Helper method exposed globally to allow adding new tasks programmatically
+    window.addNewTaskToCloud = async function(taskObject) {
+      try {
+        await addDoc(collection(db, "tasks"), taskObject);
+        console.log("Task successfully added to Cloud Firestore!");
+      } catch (err) {
+        console.error("Failed to add task: ", err);
+      }
+    };
+  </script>
 </body>
 </html>
