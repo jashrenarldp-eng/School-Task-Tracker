@@ -546,134 +546,148 @@
   </script>
 
   <!-- Firebase Real-time Firestore SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, 
-      enableIndexedDbPersistence, 
-      collection, 
-      addDoc, 
-      onSnapshot,
-      doc,
-      updateDoc
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  <!-- Firebase Real-time Firestore SDK with Personal Progress Handling -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    enableIndexedDbPersistence, 
+    collection, 
+    addDoc, 
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Your exact Firebase configuration credentials
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-      authDomain: "takeitdoit-app.firebaseapp.com",
-      projectId: "takeitdoit-app",
-      storageBucket: "takeitdoit-app.firebasestorage.app",
-      messagingSenderId: "1057165971311",
-      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-      measurementId: "G-S8PC6K718R"
-    };
+  // Your Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
+    authDomain: "takeitdoit-app.firebaseapp.com",
+    projectId: "takeitdoit-app",
+    storageBucket: "takeitdoit-app.firebasestorage.app",
+    messagingSenderId: "1057165971311",
+    appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
+    measurementId: "G-S8PC6K718R"
+  };
 
-    // Initialize Firebase & Cloud Firestore
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // Enable Offline Persistence for Firebase Firestore
-    enableIndexedDbPersistence(db).catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('Persistence failed: Multiple browser tabs open.');
-      } else if (err.code === 'unimplemented') {
-        console.warn('Browser does not support offline storage.');
-      }
-    });
+  // Enable Offline Persistence for Firestore
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Persistence failed: Multiple tabs open.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('Browser does not support offline storage.');
+    }
+  });
 
-    const taskGrid = document.getElementById("taskGrid");
-    const expandModal = document.getElementById("expandModal");
+  const taskGrid = document.getElementById("taskGrid");
+  const expandModal = document.getElementById("expandModal");
 
-    // Real-Time Firebase Listener
-    // Automatically renders task cards dynamically whenever Firestore updates
-    onSnapshot(collection(db, "tasks"), (snapshot) => {
-      taskGrid.innerHTML = ""; // Clear task container for fresh render
+  // Local Storage Helpers for Personal Task Completion
+  function getPersonalTaskState(taskId) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    return !!localData[taskId];
+  }
 
-      if (snapshot.empty) {
-        taskGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-            No tasks found in cloud database. Add tasks to your <strong>tasks</strong> Firestore collection!
-          </div>`;
-        return;
-      }
+  function setPersonalTaskState(taskId, isCompleted) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    localData[taskId] = isCompleted;
+    localStorage.setItem("user_task_progress", JSON.stringify(localData));
+  }
 
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const taskId = docSnap.id;
-        renderTaskCard(taskId, data);
-      });
-    }, (error) => {
-      console.error("Firestore Read Error: ", error);
-      taskGrid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">
-        Error loading cloud database. Make sure your Firestore Rules permit access.
-      </div>`;
-    });
+  // Real-Time Firebase Listener for Global Admin Tasks
+  onSnapshot(collection(db, "tasks"), (snapshot) => {
+    taskGrid.innerHTML = "";
 
-    // Function to construct and render individual Task Cards
-    function renderTaskCard(id, data) {
-      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-      const card = document.createElement("div");
-      card.className = `card ${subjectClass} ${data.completed ? 'completed' : ''}`;
-      card.setAttribute("data-id", id);
-
-      card.innerHTML = `
-        <div>
-          <div class="card-top">
-            <div class="card-controls">
-              <input type="checkbox" class="checkbox" ${data.completed ? 'checked' : ''} />
-              <button class="btn-expand-icon" title="Expand task view">⤢</button>
-            </div>
-            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
-          </div>
-          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-          <div class="due-date">${data.dueDate || ''}</div>
-        </div>
-        <div class="card-body">${data.body || ''}</div>
-      `;
-
-      // Checkbox click handler (Sync completion status to Firebase)
-      const checkbox = card.querySelector(".checkbox");
-      checkbox.addEventListener("change", async (e) => {
-        e.stopPropagation();
-        const taskRef = doc(db, "tasks", id);
-        await updateDoc(taskRef, {
-          completed: checkbox.checked
-        });
-      });
-
-      // Card click handler (Toggle completed)
-      card.addEventListener("click", async (e) => {
-        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
-        const taskRef = doc(db, "tasks", id);
-        await updateDoc(taskRef, {
-          completed: !data.completed
-        });
-      });
-
-      // Expand Modal Handler
-      const expandBtn = card.querySelector(".btn-expand-icon");
-      expandBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-        document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-        document.getElementById("expDueDate").textContent = data.dueDate || '';
-        document.getElementById("expBody").innerHTML = data.body || '';
-        expandModal.classList.add("active");
-      });
-
-      taskGrid.appendChild(card);
+    if (snapshot.empty) {
+      taskGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          No tasks published by admin yet.
+        </div>`;
+      return;
     }
 
-    // Helper method exposed globally to allow adding new tasks programmatically
-    window.addNewTaskToCloud = async function(taskObject) {
-      try {
-        await addDoc(collection(db, "tasks"), taskObject);
-        console.log("Task successfully added to Cloud Firestore!");
-      } catch (err) {
-        console.error("Failed to add task: ", err);
-      }
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const taskId = docSnap.id;
+      renderTaskCard(taskId, data);
+    });
+  }, (error) => {
+    console.error("Firestore Read Error: ", error);
+    taskGrid.innerHTML = `<div style="grid-column: 1 / -1; color: #ef4444; padding: 20px;">
+      Error loading tasks. Please check your network connection or database rules.
+    </div>`;
+  });
+
+  // Render Card with Local Progress Binding
+  function renderTaskCard(id, data) {
+    const isCompleted = getPersonalTaskState(id);
+    const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
+    
+    const card = document.createElement("div");
+    card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
+    card.setAttribute("data-id", id);
+
+    card.innerHTML = `
+      <div>
+        <div class="card-top">
+          <div class="card-controls">
+            <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
+            <button class="btn-expand-icon" title="Expand task view">⤢</button>
+          </div>
+          <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+        </div>
+        <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+        <div class="due-date">${data.dueDate || ''}</div>
+      </div>
+      <div class="card-body">${data.body || ''}</div>
+    `;
+
+    const checkbox = card.querySelector(".checkbox");
+
+    // Toggle completion status locally on the user's device
+    const toggleCompletion = () => {
+      const newState = !getPersonalTaskState(id);
+      setPersonalTaskState(id, newState);
+      checkbox.checked = newState;
+      card.classList.toggle("completed", newState);
     };
-  </script>
+
+    checkbox.addEventListener("change", (e) => {
+      e.stopPropagation();
+      setPersonalTaskState(id, checkbox.checked);
+      card.classList.toggle("completed", checkbox.checked);
+    });
+
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
+      toggleCompletion();
+    });
+
+    // Expand Modal
+    const expandBtn = card.querySelector(".btn-expand-icon");
+    expandBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+      document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+      document.getElementById("expDueDate").textContent = data.dueDate || '';
+      document.getElementById("expBody").innerHTML = data.body || '';
+      expandModal.classList.add("active");
+    });
+
+    taskGrid.appendChild(card);
+  }
+
+  // Admin function to publish a new task to all users
+  window.addNewTaskToCloud = async function(taskObject) {
+    try {
+      await addDoc(collection(db, "tasks"), taskObject);
+      console.log("Task successfully published to Cloud Firestore!");
+    } catch (err) {
+      console.error("Failed to add task: ", err);
+    }
+  };
+</script>
 </body>
 </html>
