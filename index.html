@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Take It! Do It!</title>
+  
+<!-- Web App Manifest Link -->
+<link rel="manifest" href="./manifest.json" />
+
+<!-- Mobile Browser Header Colors -->
+<meta name="theme-color" content="#0f172a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
     /* Light Mode Variables */
@@ -693,6 +701,28 @@
         // UI rendering logic goes here
       }
     });
+    
+    let deferredPrompt;
+
+// 1. Listen for the browser's install event
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); // Prevent automatic banner from showing immediately
+  deferredPrompt = e;  // Save the event for when the user clicks an install button
+  
+  // Show a custom "Install App" button in your UI
+  const installBtn = document.getElementById("btnInstallPWA");
+  if (installBtn) {
+    installBtn.style.display = "inline-flex";
+    
+    installBtn.addEventListener("click", async () => {
+      deferredPrompt.prompt(); // Trigger the native install dialog
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+    });
+  }
+});
   });
 </script>
   
