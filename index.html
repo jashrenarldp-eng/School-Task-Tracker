@@ -475,9 +475,9 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  const ALLOWED_OFFICER_EMAIL = "officers@class.com";
+  const ALLOWED_OFFICER_EMAIL = "officer@class.com";
 
-  // Force single-session in-memory auth (logs out automatically on refresh/tab close)
+  // Force single-session in-memory auth
   setPersistence(auth, inMemoryPersistence).catch((err) => {
     console.warn("Auth persistence status:", err);
   });
@@ -487,16 +487,23 @@
     console.warn("Offline persistence status:", err.code);
   });
 
+  // Safe DOM Elements Lookup
   const taskGrid = document.getElementById("taskGrid");
   const expandModal = document.getElementById("expandModal");
   const adminModal = document.getElementById("adminModal");
+  const adminAuthStep = document.getElementById("adminAuthStep");
+  const adminFormStep = document.getElementById("adminFormStep");
+  const passcodeError = document.getElementById("passcodeError");
+  const themeToggleBtn = document.getElementById("themeToggle");
+  const netStatusPill = document.getElementById("netStatusPill");
+  const saveBanner = document.getElementById("saveBanner");
+  const btnInstallPWA = document.getElementById("btnInstallPWA");
 
   /* ==========================================
      1. DARK MODE
      ========================================== */
-  const themeToggleBtn = document.getElementById("themeToggle");
-
   function applyTheme(theme) {
+    if (!themeToggleBtn) return;
     if (theme === "dark") {
       document.body.classList.add("dark-mode");
       themeToggleBtn.textContent = "☀️ Light Mode";
@@ -510,30 +517,31 @@
     (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   applyTheme(savedTheme);
 
-  themeToggleBtn.addEventListener("click", () => {
+  themeToggleBtn?.addEventListener("click", () => {
     const isDark = document.body.classList.toggle("dark-mode");
     const currentTheme = isDark ? "dark" : "light";
     localStorage.setItem("app_theme", currentTheme);
-    themeToggleBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+    applyTheme(currentTheme);
   });
 
   /* ==========================================
      2. OFFLINE & NETWORK MONITORING
      ========================================== */
-  const netStatusPill = document.getElementById("netStatusPill");
-  const saveBanner = document.getElementById("saveBanner");
-
   function updateNetworkStatus() {
     if (navigator.onLine) {
-      netStatusPill.className = "btn-pill btn-light-green";
-      netStatusPill.textContent = "⚡ Syncing Live";
+      if (netStatusPill) {
+        netStatusPill.className = "btn-pill btn-light-green";
+        netStatusPill.textContent = "⚡ Syncing Live";
+      }
       if (saveBanner) {
         saveBanner.className = "status-banner btn-light-green";
         saveBanner.textContent = "🟢 Live Cloud Connection Active";
       }
     } else {
-      netStatusPill.className = "btn-pill btn-offline";
-      netStatusPill.textContent = "📡 Offline Mode";
+      if (netStatusPill) {
+        netStatusPill.className = "btn-pill btn-offline";
+        netStatusPill.textContent = "📡 Offline Mode";
+      }
       if (saveBanner) {
         saveBanner.className = "status-banner btn-offline";
         saveBanner.textContent = "🟠 Offline - Serving local cached tasks";
@@ -547,19 +555,17 @@
 
   // PWA Install Prompt
   let deferredPrompt;
-  const btnInstallPWA = document.getElementById("btnInstallPWA");
-
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    btnInstallPWA.style.display = "inline-flex";
+    if (btnInstallPWA) btnInstallPWA.style.display = "inline-flex";
   });
 
-  btnInstallPWA.addEventListener("click", async () => {
+  btnInstallPWA?.addEventListener("click", async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") {
+    if (outcome === "accepted" && btnInstallPWA) {
       btnInstallPWA.style.display = "none";
     }
     deferredPrompt = null;
@@ -588,6 +594,7 @@
   }
 
   onSnapshot(collection(db, "tasks"), (snapshot) => {
+    if (!taskGrid) return;
     taskGrid.innerHTML = "";
 
     if (snapshot.empty) {
@@ -606,6 +613,7 @@
   });
 
   function renderTaskCard(id, data) {
+    if (!taskGrid) return;
     const isCompleted = getPersonalTaskState(id);
     const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
     
@@ -637,7 +645,7 @@
       card.classList.toggle("completed", newState);
     };
 
-    checkbox.addEventListener("change", (e) => {
+    checkbox?.addEventListener("change", (e) => {
       e.stopPropagation();
       setPersonalTaskState(id, checkbox.checked);
       card.classList.toggle("completed", checkbox.checked);
@@ -648,115 +656,106 @@
       toggleCompletion();
     });
 
-    card.querySelector(".btn-expand-icon").addEventListener("click", (e) => {
+    card.querySelector(".btn-expand-icon")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-      document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-      document.getElementById("expDueDate").textContent = data.dueDate || '';
-      document.getElementById("expBody").innerHTML = data.body || '';
-      expandModal.classList.add("active");
+      const expBadge = document.getElementById("expBadge");
+      const expTitle = document.getElementById("expTitle");
+      const expDueDate = document.getElementById("expDueDate");
+      const expBody = document.getElementById("expBody");
+
+      if (expBadge) expBadge.textContent = (data.subject || 'GENERAL').toUpperCase();
+      if (expTitle) expTitle.textContent = data.title || 'Untitled Task';
+      if (expDueDate) expDueDate.textContent = data.dueDate || '';
+      if (expBody) expBody.innerHTML = data.body || '';
+      if (expandModal) expandModal.classList.add("active");
     });
 
     taskGrid.appendChild(card);
   }
 
-/* ==========================================
-   4. EMAIL & PASSWORD AUTHENTICATION
-   ========================================== */
-const ALLOWED_OFFICER_EMAIL = "officer@class.com";
+  /* ==========================================
+     4. EMAIL & PASSWORD AUTHENTICATION
+     ========================================== */
+  document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
+    expandModal?.classList.remove("active");
+  });
 
-const adminAuthStep = document.getElementById("adminAuthStep");
-const adminFormStep = document.getElementById("adminFormStep");
-const passcodeError = document.getElementById("passcodeError");
+  document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
+    adminModal?.classList.add("active");
+  });
 
-document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
-
-document.getElementById("btnAdminAccess").addEventListener("click", () => {
-  adminModal.classList.add("active");
-});
-
-// Helper function to switch steps
-function switchAdminStep(showForm) {
-  if (showForm) {
-    adminAuthStep.style.display = "none";
-    adminFormStep.style.display = "block";
-  } else {
-    adminAuthStep.style.display = "block";
-    adminFormStep.style.display = "none";
-  }
-}
-
-// Sign out and reset interface on close
-document.getElementById("btnCloseAdmin").addEventListener("click", async () => {
-  adminModal.classList.remove("active");
-  await signOut(auth);
-  switchAdminStep(false);
-});
-
-// Synchronize UI whenever auth state changes
-onAuthStateChanged(auth, (user) => {
-  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-    switchAdminStep(true);
-  } else {
-    switchAdminStep(false);
-  }
-});
-
-// Verify credentials and explicitly switch view
-document.getElementById("btnVerifyPasscode").addEventListener("click", async (e) => {
-  e.preventDefault(); // Stop any browser reloads
-  
-  const emailInput = document.getElementById("adminEmail").value.trim();
-  const passwordInput = document.getElementById("adminPasscode").value;
-
-  if (!emailInput || !passwordInput) {
-    passcodeError.textContent = "Please enter both email and password.";
-    passcodeError.style.display = "block";
-    return;
+  function switchAdminStep(showForm) {
+    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
+    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
   }
 
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-    
-    // Clear error message and passcode field
-    passcodeError.style.display = "none";
-    document.getElementById("adminPasscode").value = "";
-    
-    // Force view to switch immediately to Step 2
-    switchAdminStep(true);
-  } catch (error) {
-    console.error("Auth Error Code:", error.code, error.message);
-    
-    if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-      passcodeError.textContent = "Invalid email or password. Access denied.";
-    } else {
-      passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
-    }
-    passcodeError.style.display = "block";
-  }
-});
-
-// Publish Task Handler
-document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  
-  const newTask = {
-    title: document.getElementById("adminTaskTitle").value,
-    subject: document.getElementById("adminTaskSubject").value,
-    dueDate: document.getElementById("adminTaskDueDate").value,
-    body: document.getElementById("adminTaskBody").value,
-    createdAt: new Date().toISOString()
-  };
-
-  try {
-    await addDoc(collection(db, "tasks"), newTask);
-    document.getElementById("adminTaskForm").reset();
-    adminModal.classList.remove("active");
+  document.getElementById("btnCloseAdmin")?.addEventListener("click", async () => {
+    adminModal?.classList.remove("active");
     await signOut(auth);
     switchAdminStep(false);
-    alert("Task successfully published!");
-  } catch (err) {
-    alert("Failed to publish task: " + err.message);
-  }
-});
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+      switchAdminStep(true);
+    } else {
+      switchAdminStep(false);
+    }
+  });
+
+  document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    const emailInput = document.getElementById("adminEmail")?.value.trim();
+    const passwordInput = document.getElementById("adminPasscode")?.value;
+
+    if (!emailInput || !passwordInput) {
+      if (passcodeError) {
+        passcodeError.textContent = "Please enter both email and password.";
+        passcodeError.style.display = "block";
+      }
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+      if (passcodeError) passcodeError.style.display = "none";
+      const passcodeEl = document.getElementById("adminPasscode");
+      if (passcodeEl) passcodeEl.value = "";
+      switchAdminStep(true);
+    } catch (error) {
+      console.error("Auth Error Code:", error.code, error.message);
+      if (passcodeError) {
+        if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+          passcodeError.textContent = "Invalid email or password. Access denied.";
+        } else {
+          passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
+        }
+        passcodeError.style.display = "block";
+      }
+    }
+  });
+
+  document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const newTask = {
+      title: document.getElementById("adminTaskTitle")?.value || "",
+      subject: document.getElementById("adminTaskSubject")?.value || "",
+      dueDate: document.getElementById("adminTaskDueDate")?.value || "",
+      body: document.getElementById("adminTaskBody")?.value || "",
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, "tasks"), newTask);
+      document.getElementById("adminTaskForm")?.reset();
+      adminModal?.classList.remove("active");
+      await signOut(auth);
+      switchAdminStep(false);
+      alert("Task successfully published!");
+    } catch (err) {
+      alert("Failed to publish task: " + err.message);
+    }
+  });
 </script>
