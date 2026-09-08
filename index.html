@@ -645,6 +645,14 @@
       window.addEventListener("click", (e) => {
         if (e.target === expandModal) expandModal.classList.remove("active");
       });
+      
+      if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Offline Service Worker Active!'))
+      .catch((err) => console.error('Service Worker Registration Failed:', err));
+  });
+}
     });
   </script>
 </body>
