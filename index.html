@@ -655,5 +655,87 @@
 }
     });
   </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    enableIndexedDbPersistence, 
+    collection, 
+    onSnapshot 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Enable Offline Persistence for Firebase
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.log('Persistence failed: Multiple tabs open at once.');
+    } else if (err.code === 'unimplemented') {
+      console.log('Browser does not support offline storage.');
+    }
+  });
+
+  // Real-time Automatic Update Listener
+  onSnapshot(collection(db, "tasks"), (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        console.log("New task automatically received: ", change.doc.data());
+        // UI rendering logic goes here
+      }
+    });
+  });
+</script>
+  
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    enableIndexedDbPersistence, 
+    collection, 
+    onSnapshot 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Enable Offline Persistence for Firebase
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.log('Persistence failed: Multiple tabs open at once.');
+    } else if (err.code === 'unimplemented') {
+      console.log('Browser does not support offline storage.');
+    }
+  });
+
+  // Real-time Automatic Update Listener
+  onSnapshot(collection(db, "tasks"), (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        console.log("New task automatically received: ", change.doc.data());
+        // UI rendering logic goes here
+      }
+    });
+  });
+</script>
+  
 </body>
 </html>
