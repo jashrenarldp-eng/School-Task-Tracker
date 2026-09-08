@@ -861,8 +861,7 @@
   </div>
 
 
-
-  <script type="module">
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { 
     getFirestore, 
@@ -872,7 +871,7 @@
     onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // Updated officer passcode
+  // Officer passcode
   const OFFICER_PASSCODE = "BSIE1-5090820261";
 
   const firebaseConfig = {
@@ -888,6 +887,7 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // Firestore Offline Persistence
   enableIndexedDbPersistence(db).catch((err) => {
     console.warn("Offline persistence status:", err.code);
   });
@@ -896,6 +896,93 @@
   const expandModal = document.getElementById("expandModal");
   const adminModal = document.getElementById("adminModal");
 
+  /* ==========================================
+     1. DARK MODE FEATURE
+     ========================================== */
+  const themeToggleBtn = document.getElementById("themeToggle");
+
+  function applyTheme(theme) {
+    if (theme === "dark") {
+      document.body.classList.add("dark-mode");
+      themeToggleBtn.textContent = "☀️ Light Mode";
+    } else {
+      document.body.classList.remove("dark-mode");
+      themeToggleBtn.textContent = "🌙 Dark Mode";
+    }
+  }
+
+  // Check saved theme or fallback to system preference
+  const savedTheme = localStorage.getItem("app_theme") || 
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  applyTheme(savedTheme);
+
+  themeToggleBtn.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark-mode");
+    const currentTheme = isDark ? "dark" : "light";
+    localStorage.setItem("app_theme", currentTheme);
+    themeToggleBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+  });
+
+  /* ==========================================
+     2. OFFLINE & NETWORK STATUS FEATURE
+     ========================================== */
+  const netStatusPill = document.getElementById("netStatusPill");
+  const saveBanner = document.getElementById("saveBanner");
+
+  function updateNetworkStatus() {
+    if (navigator.onLine) {
+      netStatusPill.className = "btn-pill btn-light-green";
+      netStatusPill.textContent = "⚡ Syncing Live";
+      if (saveBanner) {
+        saveBanner.className = "status-banner btn-light-green";
+        saveBanner.textContent = "🟢 Live Cloud Connection Active";
+      }
+    } else {
+      netStatusPill.className = "btn-pill btn-offline";
+      netStatusPill.textContent = "📡 Offline Mode";
+      if (saveBanner) {
+        saveBanner.className = "status-banner btn-offline";
+        saveBanner.textContent = "🟠 Offline - Serving local cached tasks";
+      }
+    }
+  }
+
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
+  updateNetworkStatus(); // Initial execution
+
+  // PWA Installation Prompt Logic
+  let deferredPrompt;
+  const btnInstallPWA = document.getElementById("btnInstallPWA");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btnInstallPWA.style.display = "inline-flex";
+  });
+
+  btnInstallPWA.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") {
+      btnInstallPWA.style.display = "none";
+    }
+    deferredPrompt = null;
+  });
+
+  // Service Worker Registration for PWA caching
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch((err) => {
+        console.warn("Service Worker registration failed:", err);
+      });
+    });
+  }
+
+  /* ==========================================
+     3. FIRESTORE TASK MANAGEMENT
+     ========================================== */
   function getPersonalTaskState(taskId) {
     const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
     return !!localData[taskId];
@@ -980,12 +1067,13 @@
     taskGrid.appendChild(card);
   }
 
-  // Modal Control Events
+  /* ==========================================
+     4. MODAL & ADMIN HANDLERS
+     ========================================== */
   document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
   document.getElementById("btnAdminAccess").addEventListener("click", () => adminModal.classList.add("active"));
   document.getElementById("btnCloseAdmin").addEventListener("click", () => adminModal.classList.remove("active"));
 
-  // Passcode Verification Handler
   document.getElementById("btnVerifyPasscode").addEventListener("click", () => {
     const enteredCode = document.getElementById("adminPasscode").value;
     if (enteredCode === OFFICER_PASSCODE) {
@@ -997,7 +1085,6 @@
     }
   });
 
-  // Task Creation Handler
   document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     
