@@ -1027,27 +1027,22 @@
 
 
     // Set officer passcode here
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.x.x/firebase-auth.js";
 
-    const OFFICER_PASSCODE = "BSIE1-5090820261";
+const auth = getAuth();
 
+async function loginAdmin() {
+  const email = document.getElementById("officer-email").value;
+  const password = document.getElementById("officer-password").value;
 
-
-    const firebaseConfig = {
-
-      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-
-      authDomain: "takeitdoit-app.firebaseapp.com",
-
-      projectId: "takeitdoit-app",
-
-      storageBucket: "takeitdoit-app.firebasestorage.app",
-
-      messagingSenderId: "1057165971311",
-
-      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-
-      measurementId: "G-S8PC6K718R"
-
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    alert("Logged in successfully as Officer!");
+    showAdminDashboard();
+  } catch (error) {
+    alert("Invalid officer credentials!");
+  }
+}
     };
 
 
