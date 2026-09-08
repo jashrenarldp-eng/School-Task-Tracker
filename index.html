@@ -452,14 +452,14 @@
   const db = getFirestore(app);
   const auth = getAuth(app);
 
-  const OFFICER_EMAIL = "officer@class.com";
+  const ALLOWED_OFFICER_EMAIL = "officers@class.com";
 
-  // Force session to expire on tab/browser close or refresh
+  // Force single-session in-memory auth (logs out automatically on refresh/tab close)
   setPersistence(auth, inMemoryPersistence).catch((err) => {
-    console.warn("Auth persistence error:", err);
+    console.warn("Auth persistence status:", err);
   });
 
-  // Firestore Offline Persistence
+  // Enable Firestore offline persistence
   enableIndexedDbPersistence(db).catch((err) => {
     console.warn("Offline persistence status:", err.code);
   });
@@ -469,7 +469,7 @@
   const adminModal = document.getElementById("adminModal");
 
   /* ==========================================
-     1. DARK MODE FEATURE
+     1. DARK MODE
      ========================================== */
   const themeToggleBtn = document.getElementById("themeToggle");
 
@@ -495,7 +495,7 @@
   });
 
   /* ==========================================
-     2. OFFLINE & NETWORK STATUS FEATURE
+     2. OFFLINE & NETWORK MONITORING
      ========================================== */
   const netStatusPill = document.getElementById("netStatusPill");
   const saveBanner = document.getElementById("saveBanner");
@@ -522,7 +522,7 @@
   window.addEventListener("offline", updateNetworkStatus);
   updateNetworkStatus();
 
-  // PWA Installation Prompt Logic
+  // PWA Install Prompt
   let deferredPrompt;
   const btnInstallPWA = document.getElementById("btnInstallPWA");
 
@@ -638,7 +638,7 @@
   }
 
   /* ==========================================
-     4. AUTHENTICATION & ADMIN MODAL
+     4. EMAIL & PASSWORD AUTHENTICATION
      ========================================== */
   document.getElementById("btnCloseExpand").addEventListener("click", () => expandModal.classList.remove("active"));
   
@@ -646,15 +646,15 @@
     adminModal.classList.add("active");
   });
 
-  // Closing the Admin modal automatically signs out the officer session
+  // Auto sign-out when closing admin modal
   document.getElementById("btnCloseAdmin").addEventListener("click", async () => {
     adminModal.classList.remove("active");
     await signOut(auth);
   });
 
-  // Monitor Auth State Changes
+  // Toggle modal screens based on auth state
   onAuthStateChanged(auth, (user) => {
-    if (user && user.email === OFFICER_EMAIL) {
+    if (user && user.email === ALLOWED_OFFICER_EMAIL) {
       document.getElementById("adminAuthStep").style.display = "none";
       document.getElementById("adminFormStep").style.display = "block";
     } else {
@@ -663,23 +663,24 @@
     }
   });
 
-  // Verify Password with Firebase Auth
+  // Sign in using inputs for Email and Password
   document.getElementById("btnVerifyPasscode").addEventListener("click", async () => {
+    const enteredEmail = document.getElementById("adminEmail").value.trim();
     const enteredPassword = document.getElementById("adminPasscode").value;
     const errorDiv = document.getElementById("passcodeError");
 
     try {
-      await signInWithEmailAndPassword(auth, OFFICER_EMAIL, enteredPassword);
+      await signInWithEmailAndPassword(auth, enteredEmail, enteredPassword);
       errorDiv.style.display = "none";
       document.getElementById("adminPasscode").value = "";
     } catch (error) {
       console.error("Auth Error:", error);
-      errorDiv.textContent = "Incorrect passcode or unauthorized user.";
+      errorDiv.textContent = "Invalid email or password. Access denied.";
       errorDiv.style.display = "block";
     }
   });
 
-  // Task Creation Handler
+  // Publish Task Handler
   document.getElementById("adminTaskForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     
@@ -695,10 +696,10 @@
       await addDoc(collection(db, "tasks"), newTask);
       document.getElementById("adminTaskForm").reset();
       adminModal.classList.remove("active");
-      await signOut(auth); // Sign out after task is published
+      await signOut(auth);
       alert("Task successfully published!");
     } catch (err) {
-      alert("Failed to publish task. Check your permissions: " + err.message);
+      alert("Failed to publish task: " + err.message);
     }
   });
 </script>
