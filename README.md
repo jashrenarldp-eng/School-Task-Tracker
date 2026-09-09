@@ -1,4 +1,4 @@
-# 📌 TakeItDoIt — Real-Time Low-Data Task Communication System & PWA
+# TakeItDoIt — Real-Time Low-Data Task Communication System & PWA
 
 [![PWA Ready](https://img.shields.io/badge/PWA-Offline%20First-blueviolet?style=for-the-badge&logo=pwa)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%26%20Auth-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
@@ -9,7 +9,7 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 - [The Problem We're Solving](#-the-problem-were-solving)
 - [Key Features \& Stakeholder Value](#-key-features--stakeholder-value)
 - [Tech Stack \& Architecture](#-tech-stack--architecture)
@@ -20,7 +20,7 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 
 ---
 
-## 🎯 The Problem We're Solving
+##  The Problem We're Solving
 
 1. **Chat Noise & Buried Announcements**  
    In platforms like Messenger, Telegram, and Discord, vital assignment details, deadlines, and project guidelines quickly get buried beneath hundreds of student messages and casual chatter. Instructors are forced to repeatedly answer the same logistical queries.
@@ -33,7 +33,7 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 
 ---
 
-## 💡 Key Features & Stakeholder Value
+##  Key Features & Stakeholder Value
 
 | Stakeholder | Core Pain Point Solved | System Value |
 | :--- | :--- | :--- |
@@ -43,7 +43,7 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 
 ---
 
-## 🛠 Tech Stack & Architecture
+##  Tech Stack & Architecture
 
 - **Frontend:** HTML5, Modern CSS, Vanilla ES Modules (Zero framework dependencies for ultra-fast load times).
 - **Database:** Firebase Firestore (Real-time NoSQL sync via `onSnapshot`).
