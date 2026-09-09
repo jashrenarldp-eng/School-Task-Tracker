@@ -307,7 +307,7 @@
       color: #0f172a;
       background: white;
     }
-    /* Archive Modal Overlay */
+/* Archive Modal Overlay */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -393,11 +393,11 @@
   font-size: 0.85rem;
   transition: background 0.2s;
 }
-
 .btn-unarchive:hover {
   background: #16a34a;
 }
-  </style>
+    
+</style>
 
 
   
@@ -419,6 +419,9 @@
           <button id="themeToggle" class="btn-pill btn-dark">Dark Mode</button>  
           <button id="btnInstallPWA" class="btn-pill btn-dark" style="display: none;">📥 Install App</button>
           <div id="netStatusPill" class="btn-pill btn-light-green">⚡ Syncing Live</div>
+          <button id="btnOpenArchive" class="btn-pill">📦 View Archives
+</button>
+          
         </div>
 
         <div class="subject-legend">
@@ -531,11 +534,6 @@
       </form>
     </div>
   </div>
-  
-<!-- Add this button in your Navbar / Header -->
-<button id="btnOpenArchive" class="btn-pill">
-  📦 View Archives
-</button>
 
 <!-- Add this modal markup before </body> -->
 <div id="archiveModal" class="modal-overlay">
