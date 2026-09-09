@@ -500,7 +500,47 @@
   const btnInstallPWA = document.getElementById("btnInstallPWA");
 
   /* ==========================================
-     1. DARK MODE
+     1. LOCAL STORAGE & ARCHIVE HELPERS
+     ========================================== */
+  function getPersonalTaskState(taskId) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    return !!localData[taskId];
+  }
+
+  function setPersonalTaskState(taskId, isCompleted) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    localData[taskId] = isCompleted;
+    localStorage.setItem("user_task_progress", JSON.stringify(localData));
+  }
+
+  function getArchivedTasks() {
+    return JSON.parse(localStorage.getItem("takeitdoit_archived")) || [];
+  }
+
+  function archiveTask(taskId) {
+    const archived = getArchivedTasks();
+    if (!archived.some(item => item.id === taskId)) {
+      archived.push({ id: taskId, archivedAt: Date.now() });
+      localStorage.setItem("takeitdoit_archived", JSON.stringify(archived));
+    }
+    // Remove card visually from active grid
+    const cardEl = document.querySelector(`[data-id="${taskId}"]`);
+    if (cardEl) cardEl.remove();
+
+    if (taskGrid && taskGrid.children.length === 0) {
+      taskGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          No active tasks remaining.
+        </div>`;
+    }
+  }
+
+  // Expose archive functions globally for inline usages if needed
+  window.getArchivedTasks = getArchivedTasks;
+  window.archiveTask = archiveTask;
+
+  /* ==========================================
+     2. DARK MODE
      ========================================== */
   function applyTheme(theme) {
     if (!themeToggleBtn) return;
@@ -525,7 +565,7 @@
   });
 
   /* ==========================================
-     2. OFFLINE & NETWORK MONITORING
+     3. OFFLINE & NETWORK MONITORING
      ========================================== */
   function updateNetworkStatus() {
     if (navigator.onLine) {
@@ -580,32 +620,80 @@
   }
 
   /* ==========================================
-     3. FIRESTORE TASK MANAGEMENT
+     4. NOTIFICATIONS
      ========================================== */
-  function getPersonalTaskState(taskId) {
-    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-    return !!localData[taskId];
+  function sendLocalNotification(title, body, tag) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.showNotification(title, {
+            body: body,
+            icon: "./icon-192.png",
+            badge: "./badge.png",
+            tag: tag,
+            vibrate: [200, 100, 200]
+          });
+        })
+        .catch(() => {
+          new Notification(title, { body, icon: "./icon-192.png", tag });
+        });
+    } else {
+      new Notification(title, { body, icon: "./icon-192.png", tag });
+    }
   }
 
-  function setPersonalTaskState(taskId, isCompleted) {
-    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-    localData[taskId] = isCompleted;
-    localStorage.setItem("user_task_progress", JSON.stringify(localData));
-  }
+  document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
+    if (!("Notification" in window)) {
+      alert("This browser does not support web notifications.");
+      return;
+    }
+    
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      alert("Notifications enabled!");
+      sendLocalNotification("Test Alert", "Notifications are active!", "test-id");
+    } else if (permission === "denied") {
+      alert("Notifications were blocked in your browser settings.");
+    }
+  });
+
+  /* ==========================================
+     5. UNIFIED REAL-TIME FIRESTORE LISTENER
+     ========================================== */
+  let isInitialLoad = true;
 
   onSnapshot(collection(db, "tasks"), (snapshot) => {
     if (!taskGrid) return;
+
+    // Trigger Notification on live doc insertion
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added" && !isInitialLoad) {
+        const taskData = change.doc.data();
+        const subject = (taskData.subject || "GENERAL").toUpperCase();
+        const title = taskData.title || "New Task Posted";
+        sendLocalNotification(`📌 New Task [${subject}]`, title, change.doc.id);
+      }
+    });
+
+    isInitialLoad = false;
     taskGrid.innerHTML = "";
 
-    if (snapshot.empty) {
+    // Filter out locally archived tasks
+    const archivedList = getArchivedTasks();
+    const archivedIds = archivedList.map(item => item.id);
+    const activeDocs = snapshot.docs.filter(docSnap => !archivedIds.includes(docSnap.id));
+
+    if (activeDocs.length === 0) {
       taskGrid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-          No tasks published by officers yet.
+          No active tasks published by officers yet.
         </div>`;
       return;
     }
 
-    snapshot.forEach((docSnap) => {
+    activeDocs.forEach((docSnap) => {
       renderTaskCard(docSnap.id, docSnap.data());
     });
   }, (error) => {
@@ -627,6 +715,7 @@
           <div class="card-controls">
             <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
             <button class="btn-expand-icon" title="Expand task view">⤢</button>
+            <button class="btn-archive-icon" title="Archive task">📦</button>
           </div>
           <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
         </div>
@@ -637,6 +726,8 @@
     `;
 
     const checkbox = card.querySelector(".checkbox");
+    const expandBtn = card.querySelector(".btn-expand-icon");
+    const archiveBtn = card.querySelector(".btn-archive-icon");
 
     const toggleCompletion = () => {
       const newState = !getPersonalTaskState(id);
@@ -651,12 +742,12 @@
       card.classList.toggle("completed", checkbox.checked);
     });
 
-    card.addEventListener("click", (e) => {
-      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("checkbox")) return;
-      toggleCompletion();
+    archiveBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      archiveTask(id);
     });
 
-    card.querySelector(".btn-expand-icon")?.addEventListener("click", (e) => {
+    expandBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
       const expBadge = document.getElementById("expBadge");
       const expTitle = document.getElementById("expTitle");
@@ -670,11 +761,16 @@
       if (expandModal) expandModal.classList.add("active");
     });
 
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("btn-archive-icon") || e.target.classList.contains("checkbox")) return;
+      toggleCompletion();
+    });
+
     taskGrid.appendChild(card);
   }
 
   /* ==========================================
-     4. EMAIL & PASSWORD AUTHENTICATION
+     6. OFFICER AUTHENTICATION & MODALS
      ========================================== */
   document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
     expandModal?.classList.remove("active");
@@ -758,118 +854,4 @@
       alert("Failed to publish task: " + err.message);
     }
   });
-  
-/* ==========================================
-     5. NOTIFICATIONS
-  ========================================== */
-  
-/*CROSS-PLATFORM NOTIFICATION SENDER*/
-function sendLocalNotification(title, body, tag) {
-  if (!("Notification" in window) || Notification.permission !== "granted") {
-    console.warn("Notifications not allowed or unsupported.");
-    return;
-  }
-
-  // Mobile / Android / iOS / PWA Support via Service Worker
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready
-      .then((registration) => {
-        registration.showNotification(title, {
-          body: body,
-          icon: "./icon-192.png",
-          badge: "./badge.png",
-          tag: tag,
-          vibrate: [200, 100, 200]
-        });
-      })
-      .catch((err) => {
-        console.warn("Service worker notification failed, falling back to window Notification:", err);
-        new Notification(title, { body, icon: "./icon-192.png", tag });
-      });
-  } else {
-    // Desktop Fallback
-    new Notification(title, { body, icon: "./icon-192.png", tag });
-  }
-}
-
-/*USER-GESTURE PERMISSION BUTTON*/
-// Attach this to a button in your UI (e.g. <button id="btnNotifPermission">🔔 Enable Alerts</button>)
-document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
-  if (!("Notification" in window)) {
-    alert("This browser does not support web notifications.");
-    return;
-  }
-  
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    alert("Notifications enabled! You will be alerted when new tasks are posted.");
-    // Test notification immediately
-    sendLocalNotification("Test Alert", "Notifications are active!", "test-id");
-  } else if (permission === "denied") {
-    alert("Notifications were blocked in your browser settings. Please unblock them to receive task updates.");
-  }
-});
-
-/*UPDATED FIRESTORE REAL-TIME LISTENER*/
-let isInitialLoad = true;
-
-onSnapshot(collection(db, "tasks"), (snapshot) => {
-  if (!taskGrid) return;
-
-  // Process changes
-  snapshot.docChanges().forEach((change) => {
-    if (change.type === "added" && !isInitialLoad) {
-      const taskData = change.doc.data();
-      const subject = (taskData.subject || "GENERAL").toUpperCase();
-      const title = taskData.title || "New Task Posted";
-
-      // Trigger cross-platform notification
-      sendLocalNotification(`📌 New Task [${subject}]`, title, change.doc.id);
-    }
-  });
-
-  // Flip flag AFTER initial snapshot processes
-  isInitialLoad = false;
-
-  // Render cards
-  taskGrid.innerHTML = "";
-
-  if (snapshot.empty) {
-    taskGrid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-        No tasks published by officers yet.
-      </div>`;
-    return;
-  }
-
-  snapshot.forEach((docSnap) => {
-    renderTaskCard(docSnap.id, docSnap.data());
-  });
-}, (error) => {
-  console.error("Firestore Read Error: ", error);
-});
-
-/* ==========================================
-     6. ARCHIVES
-  ========================================== */
-  
-function renderTaskCard(task) {
-  return `
-    <div class="task-card" id="card-${task.id}">
-      <div class="card-header">
-        <span class="subject-tag">${task.subject || 'General'}</span>
-        <h3>${task.title}</h3>
-      </div>
-      <p class="due-date">📅 Due: ${task.dueDate}</p>
-      <p class="body">${task.body}</p>
-      
-      <div class="card-actions">
-        <!-- Option A: Dedicated Archive Button -->
-        <button onclick="window.archiveTask('${task.id}')" class="btn-archive">
-          📦 Archive Task
-        </button>
-      </div>
-    </div>
-  `;
-}
 </script>
