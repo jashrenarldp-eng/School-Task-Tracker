@@ -51,27 +51,6 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 - **Offline Storage:** IndexedDB (`enableIndexedDbPersistence`) & `localStorage` (Personal task checkboxes saved locally per device).
 - **PWA Infrastructure:** Custom Service Worker (`sw.js`) for static asset caching and background push alerts.
 
-### System Data Flow
-
-```text
-                                [ Academic Instructor ]
-                                           │
-                             (Publishes New Assignment)
-                                           │
-                                           ▼
-                                [ Firebase Firestore ]
-                                           │
-                        ┌──────────────────┴──────────────────┐
-                        │ (Real-Time Low-Data Payload Sync)   │
-                        ▼                                     ▼
-             [ Student Device A ]                   [ Student Device B ]
-            (Active Internet Connection)            (Weak/Offline Signal)
-                        │                                     │
-         ┌──────────────┴──────────────┐             ┌────────┴────────┐
-         ▼                             ▼             ▼                 ▼
-[ Local Browser Alert ]       [ IndexedDB Cache ]   [ Service Worker ] [ Read Cached ]
-  (Push Notification)         (Instant Render)      (Offline Engine)   (Task Data)
-```text
 
 ## 📑 Complete Development & System Update Log
 **Update 1: Core Engine Optimization & Runtime Stability**
@@ -144,3 +123,25 @@ Integrated automatic OS preference detection (prefers-color-scheme) paired with 
 Replaced single-threaded browser calls with a Service Worker notification pipeline (registration.showNotification).
 Integrated an initial-load flag (isInitialLoad) into onSnapshot.docChanges() to ignore past task history on startup while instantly triggering system pop-ups for new assignment dispatches.
 Built a user-gesture permission prompt (Notification.requestPermission) adhering to modern browser security guidelines.
+
+### System Data Flow
+
+```text
+                                [ Academic Instructor ]
+                                           │
+                             (Publishes New Assignment)
+                                           │
+                                           ▼
+                                [ Firebase Firestore ]
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        │ (Real-Time Low-Data Payload Sync)   │
+                        ▼                                     ▼
+             [ Student Device A ]                   [ Student Device B ]
+            (Active Internet Connection)            (Weak/Offline Signal)
+                        │                                     │
+         ┌──────────────┴──────────────┐             ┌────────┴────────┐
+         ▼                             ▼             ▼                 ▼
+[ Local Browser Alert ]       [ IndexedDB Cache ]   [ Service Worker ] [ Read Cached ]
+  (Push Notification)         (Instant Render)      (Offline Engine)   (Task Data)
+
