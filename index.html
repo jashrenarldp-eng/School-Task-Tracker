@@ -792,9 +792,7 @@ function sendLocalNotification(title, body, tag) {
   }
 }
 
-/* ==========================================
-   USER-GESTURE PERMISSION BUTTON
-   ========================================== */
+/*USER-GESTURE PERMISSION BUTTON*/
 // Attach this to a button in your UI (e.g. <button id="btnNotifPermission">🔔 Enable Alerts</button>)
 document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
   if (!("Notification" in window)) {
@@ -812,9 +810,7 @@ document.getElementById("btnNotifPermission")?.addEventListener("click", async (
   }
 });
 
-/* ==========================================
-   UPDATED FIRESTORE REAL-TIME LISTENER
-   ========================================== */
+/*UPDATED FIRESTORE REAL-TIME LISTENER*/
 let isInitialLoad = true;
 
 onSnapshot(collection(db, "tasks"), (snapshot) => {
@@ -852,4 +848,60 @@ onSnapshot(collection(db, "tasks"), (snapshot) => {
 }, (error) => {
   console.error("Firestore Read Error: ", error);
 });
+
+/* ==========================================
+     6. ARCHIVES
+  ========================================== */
+  
+/*1. TOP OF FILE: State & Helper Functions*/
+  
+function getArchivedTasks() {
+  return JSON.parse(localStorage.getItem('takeitdoit_archived')) || [];
+}
+
+function archiveTask(taskId) {
+  const archived = getArchivedTasks();
+  if (!archived.some(item => item.id === taskId)) {
+    archived.push({ id: taskId, archivedAt: Date.now() });
+    localStorage.setItem('takeitdoit_archived', JSON.stringify(archived));
+  }
+  renderTaskGrid(); // Refresh UI
+}
+
+function unarchiveTask(taskId) {
+  let archived = getArchivedTasks();
+  archived = archived.filter(item => item.id !== taskId);
+  localStorage.setItem('takeitdoit_archived', JSON.stringify(archived));
+  renderTaskGrid();
+  renderArchivedModal();
+}
+
+/*MIDDLE: Firestore Listener & Task Renderer*/
+  
+db.collection("tasks").onSnapshot((snapshot) => {
+  const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // --- INSERT FILTER HERE ---
+  const archivedList = getArchivedTasks();
+  const archivedIds = archivedList.map(item => item.id);
+  const activeTasks = allTasks.filter(task => !archivedIds.includes(task.id));
+  
+  // Pass activeTasks to your HTML generator
+  renderCards(activeTasks);
+});
+
+/* CARD TEMPLATE: Inside your HTML string builder */
+
+function createCardHTML(task) {
+  return `
+    <div class="task-card">
+      <h3>${task.title}</h3>
+      <p>${task.subject}</p>
+      <!-- Add click trigger for archiving -->
+      <button onclick="archiveTask('${task.id}')" class="btn-archive">
+        📦 Archive
+      </button>
+    </div>
+  `;
+}
 </script>
