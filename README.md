@@ -87,8 +87,8 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 **Update 4.1.2: Improved Authenticated Task Dispatcher**
 **Issue**: Plain passwords could be viewed through browsers' built-in Developer Options.
 **Implementations**:
-Upgraded the secured Instructor Dashboard using Firebase Authentication.
-Added email/password credentials handling.
+- Upgraded the secured Instructor Dashboard using Firebase Authentication.
+- Added email/password credentials handling.
 
 **Update 4.2.1: Transition Feature Fix**
 **Issue**: Workflow execution errors within the Task Dispatcher where it failed to transition from login credentials to assignment creation.
@@ -97,8 +97,8 @@ Added email/password credentials handling.
 **Update 4.3: Standardized Schemas & Visual Tiles**
 **Issue**: Unorganized main grid view layout.
 **Implementation**:
-Added standardized assignment schemas (title, subject, dueDate, body, createdAt).
-Added color-coded tiles for individual subjects to improve visual scanning.
+- Added standardized assignment schemas (title, subject, dueDate, body, createdAt).
+- Added color-coded tiles for individual subjects to improve visual scanning.
 
 **Update 4.4: Automatic Sign-Out Option**
 **Issue:** Once authenticated, the system did not automatically close the admin session.
@@ -107,22 +107,22 @@ Added color-coded tiles for individual subjects to improve visual scanning.
 **Update 5: Offline Resilience**
 **Issue**: The PWA was only accessible through active internet access.
 **Implementation**:
-Configured Firestore offline persistence (enableIndexedDbPersistence), enabling the app to store fetched assignment data directly into the browser's IndexedDB.
-Deployed a custom Service Worker (sw.js) to cache structural assets (HTML, CSS, JS) for instant offline launches.
-Added active network status listeners (online/offline window events) driving a real-time connection status banner (⚡ Syncing Live / 📡 Offline Mode).
+- Configured Firestore offline persistence (enableIndexedDbPersistence), enabling the app to store fetched assignment data directly into the browser's IndexedDB.
+- Deployed a custom Service Worker (sw.js) to cache structural assets (HTML, CSS, JS) for instant offline launches.
+- Added active network status listeners (online/offline window events) driving a real-time connection status banner (⚡ Syncing Live / 📡 Offline Mode).
 
 **Update 6: Dynamic Theme Engine**
 **Issue**: Eye strain caused by high-contrast default design during extended study sessions.
 **Implementation**:
-Developed a CSS variables system supporting high-contrast Dark and Light modes to reduce screen fatigue.
-Integrated automatic OS preference detection (prefers-color-scheme) paired with local preference overrides.
+- Developed a CSS variables system supporting high-contrast Dark and Light modes to reduce screen fatigue.
+- Integrated automatic OS preference detection (prefers-color-scheme) paired with local preference overrides.
 
 **Update 7: Cross-Platform Push Notification Pipeline**
 **Issue**: Mobile operating systems blocking background assignment alerts due to browser thread restrictions.
 **Implementation**:
-Replaced single-threaded browser calls with a Service Worker notification pipeline (registration.showNotification).
-Integrated an initial-load flag (isInitialLoad) into onSnapshot.docChanges() to ignore past task history on startup while instantly triggering system pop-ups for new assignment dispatches.
-Built a user-gesture permission prompt (Notification.requestPermission) adhering to modern browser security guidelines.
+- Replaced single-threaded browser calls with a Service Worker notification pipeline (registration.showNotification).
+- Integrated an initial-load flag (isInitialLoad) into onSnapshot.docChanges() to ignore past task history on startup while instantly triggering system pop-ups for new assignment dispatches.
+- Built a user-gesture permission prompt (Notification.requestPermission) adhering to modern browser security guidelines.
 
 ### System Data Flow
 
