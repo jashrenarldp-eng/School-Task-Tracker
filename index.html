@@ -441,6 +441,24 @@
       </form>
     </div>
   </div>
+  
+<!-- Add this button in your Navbar / Header -->
+<button id="btnOpenArchive" class="btn-pill">
+  📦 View Archives
+</button>
+
+<!-- Add this modal markup before </body> -->
+<div id="archiveModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>📦 Archived Tasks</h3>
+      <button id="btnCloseArchive" class="btn-close">&times;</button>
+    </div>
+    <div id="archiveList" class="archive-list">
+      <!-- Dynamically populated by app.js -->
+    </div>
+  </div>
+</div>
 </div>
 
 <script type="module">
