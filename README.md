@@ -71,6 +71,7 @@ An offline-first, low-bandwidth assignment communication platform designed to br
          ▼                             ▼             ▼                 ▼
 [ Local Browser Alert ]       [ IndexedDB Cache ]   [ Service Worker ] [ Read Cached ]
   (Push Notification)         (Instant Render)      (Offline Engine)   (Task Data)
+```text
 
 ## 📑 Complete Development & System Update Log
 **Update 1: Core Engine Optimization & Runtime Stability**
