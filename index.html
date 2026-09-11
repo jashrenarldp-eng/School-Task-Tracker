@@ -641,7 +641,7 @@
 
   
 <!-- SCRIPT -->
-  <script type="module">
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { 
     getFirestore, 
@@ -678,6 +678,7 @@
 
   const ALLOWED_OFFICER_EMAIL = "officer@class.com";
   let cachedTaskMap = new Map();
+  let isOfficerAuthenticated = false;
 
   setPersistence(auth, inMemoryPersistence).catch((err) => {
     console.warn("Auth persistence status:", err);
@@ -693,6 +694,7 @@
   const taskGrid = document.getElementById("taskGrid");
   const expandModal = document.getElementById("expandModal");
   const adminModal = document.getElementById("adminModal");
+  const editModal = document.getElementById("editModal");
   const adminAuthStep = document.getElementById("adminAuthStep");
   const adminFormStep = document.getElementById("adminFormStep");
   const passcodeError = document.getElementById("passcodeError");
@@ -833,6 +835,9 @@
     });
   }
 
+  /* ==========================================
+     5. TASK CARD RENDER & ADMIN CONTROLS (UPDATE 8.3)
+     ========================================== */
   function renderTaskCard(id, data) {
     if (!taskGrid) return;
     const isCompleted = getPersonalTaskState(id);
@@ -849,6 +854,8 @@
             <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
             <button class="btn-expand-icon" title="Expand task view">⤢</button>
             <button class="btn-archive-icon" title="Archive task">📦</button>
+            <button class="btn-edit-icon admin-only" title="Edit task">✏️</button>
+            <button class="btn-delete-icon admin-only" title="Delete task">🗑️</button>
           </div>
           <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
         </div>
@@ -861,6 +868,8 @@
     const checkbox = card.querySelector(".checkbox");
     const expandBtn = card.querySelector(".btn-expand-icon");
     const archiveBtn = card.querySelector(".btn-archive-icon");
+    const editBtn = card.querySelector(".btn-edit-icon");
+    const deleteBtn = card.querySelector(".btn-delete-icon");
 
     const toggleCompletion = () => {
       const newState = !getPersonalTaskState(id);
@@ -880,6 +889,16 @@
       archiveTask(id);
     });
 
+    editBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditModal(id, data);
+    });
+
+    deleteBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteTask(id);
+    });
+
     expandBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
       const expBadge = document.getElementById("expBadge");
@@ -895,7 +914,14 @@
     });
 
     card.addEventListener("click", (e) => {
-      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("btn-archive-icon") || e.target.classList.contains("checkbox")) return;
+      if (
+        e.target.tagName === "A" || 
+        e.target.classList.contains("btn-expand-icon") || 
+        e.target.classList.contains("btn-archive-icon") || 
+        e.target.classList.contains("btn-edit-icon") || 
+        e.target.classList.contains("btn-delete-icon") || 
+        e.target.classList.contains("checkbox")
+      ) return;
       toggleCompletion();
     });
 
@@ -903,7 +929,7 @@
   }
 
   /* ==========================================
-     5. THEME & NETWORK
+     6. THEME & NETWORK
      ========================================== */
   function applyTheme(theme) {
     if (!themeToggleBtn) return;
@@ -1018,7 +1044,7 @@
   });
 
   /* ==========================================
-     6. FIRESTORE REAL-TIME LISTENER
+     7. FIRESTORE REAL-TIME LISTENER
      ========================================== */
   let isInitialLoad = true;
 
@@ -1047,8 +1073,25 @@
   });
 
   /* ==========================================
-     7. OFFICER AUTH & MODALS
+     8. OFFICER AUTH & ADMIN ACTIONS (UPDATE 8.3)
      ========================================== */
+  function switchAdminStep(showForm) {
+    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
+    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+      isOfficerAuthenticated = true;
+      document.body.classList.add("is-officer");
+      switchAdminStep(true);
+    } else {
+      isOfficerAuthenticated = false;
+      document.body.classList.remove("is-officer");
+      switchAdminStep(false);
+    }
+  });
+
   document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
     expandModal?.classList.remove("active");
   });
@@ -1057,23 +1100,10 @@
     adminModal?.classList.add("active");
   });
 
-  function switchAdminStep(showForm) {
-    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
-    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
-  }
-
   document.getElementById("btnCloseAdmin")?.addEventListener("click", async () => {
     adminModal?.classList.remove("active");
     await signOut(auth);
     switchAdminStep(false);
-  });
-
-  onAuthStateChanged(auth, (user) => {
-    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-      switchAdminStep(true);
-    } else {
-      switchAdminStep(false);
-    }
   });
 
   document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
@@ -1128,72 +1158,56 @@
       switchAdminStep(false);
       alert("Task successfully published!");
     } catch (err) {
-      alert("Failed to publish task: " + err.message);// Track Officer Authentication State
-let isOfficerAuthenticated = false;
+      alert("Failed to publish task: " + err.message);
+    }
+  });
 
-onAuthStateChanged(auth, (user) => {
-  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-    isOfficerAuthenticated = true;
-    document.body.classList.add("is-officer");
-    switchAdminStep(true);
-  } else {
-    isOfficerAuthenticated = false;
-    document.body.classList.remove("is-officer");
-    switchAdminStep(false);
+  /* Edit Task Handlers */
+  function openEditModal(taskId, data) {
+    document.getElementById("editTaskId").value = taskId;
+    document.getElementById("editTaskTitle").value = data.title || "";
+    document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
+    document.getElementById("editTaskDueDate").value = data.dueDate || "";
+    document.getElementById("editTaskBody").value = data.body || "";
+    editModal?.classList.add("active");
   }
-});
 
-// Delete Task Function
-async function deleteTask(taskId) {
-  if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
-  
-  try {
-    await deleteDoc(doc(db, "tasks", taskId));
-    alert("Task permanently deleted.");
-  } catch (err) {
-    alert("Error deleting task: " + err.message);
-  }
-}
-
-// Edit Modal Functions
-const editModal = document.getElementById("editModal");
-
-function openEditModal(taskId, data) {
-  document.getElementById("editTaskId").value = taskId;
-  document.getElementById("editTaskTitle").value = data.title || "";
-  document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
-  document.getElementById("editTaskDueDate").value = data.dueDate || "";
-  document.getElementById("editTaskBody").value = data.body || "";
-  editModal?.classList.add("active");
-}
-
-document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
-  editModal?.classList.remove("active");
-});
-
-document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const taskId = document.getElementById("editTaskId").value;
-
-  const updatedFields = {
-    title: document.getElementById("editTaskTitle").value,
-    subject: document.getElementById("editTaskSubject").value,
-    dueDate: document.getElementById("editTaskDueDate").value,
-    body: document.getElementById("editTaskBody").value,
-    updatedAt: new Date().toISOString()
-  };
-
-  try {
-    await updateDoc(doc(db, "tasks", taskId), updatedFields);
+  document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
     editModal?.classList.remove("active");
-    alert("Task updated successfully!");
-  } catch (err) {
-    alert("Failed to update task: " + err.message);
-  }
-});
+  });
 
-// Updated Card Controls HTML in renderTaskCard:
-// Include edit (✏️) and delete (🗑️) buttons inside `.card-controls`
+  document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const taskId = document.getElementById("editTaskId")?.value;
+
+    const updatedFields = {
+      title: document.getElementById("editTaskTitle")?.value || "",
+      subject: document.getElementById("editTaskSubject")?.value || "",
+      dueDate: document.getElementById("editTaskDueDate")?.value || "",
+      body: document.getElementById("editTaskBody")?.value || "",
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      await updateDoc(doc(db, "tasks", taskId), updatedFields);
+      editModal?.classList.remove("active");
+      alert("Task updated successfully!");
+    } catch (err) {
+      alert("Failed to update task: " + err.message);
+    }
+  });
+
+  /* Delete Task Handler */
+  async function deleteTask(taskId) {
+    if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
+    
+    try {
+      await deleteDoc(doc(db, "tasks", taskId));
+      alert("Task permanently deleted.");
+    } catch (err) {
+      alert("Error deleting task: " + err.message);
+    }
+  }
 </script>
 </body>
 </html>
