@@ -586,64 +586,62 @@
 
   
 <!-- SCRIPT -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, 
-      enableIndexedDbPersistence, 
-      collection, 
-      addDoc, 
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { 
-      getAuth, 
-      signInWithEmailAndPassword, 
-      setPersistence,
-      inMemoryPersistence,
-      onAuthStateChanged,
-      signOut 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  // 1. DOM Lookups
+const taskSearchInput = document.getElementById("taskSearchInput");
+const subjectFilterSelect = document.getElementById("subjectFilterSelect");
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
-      authDomain: "takeitdoit-app.firebaseapp.com",
-      projectId: "takeitdoit-app",
-      storageBucket: "takeitdoit-app.firebasestorage.app",
-      messagingSenderId: "1057165971311",
-      appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
-      measurementId: "G-S8PC6K718R"
-    };
+// 2. Attach Live Filter Listeners
+taskSearchInput?.addEventListener("input", renderActiveTasks);
+subjectFilterSelect?.addEventListener("change", renderActiveTasks);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+// 3. Updated renderActiveTasks function
+function renderActiveTasks() {
+  if (!taskGrid) return;
+  taskGrid.innerHTML = "";
 
-    const ALLOWED_OFFICER_EMAIL = "officer@class.com";
-    let cachedTaskMap = new Map();
+  const archivedList = getArchivedTasks();
+  const archivedIds = archivedList.map(item => item.id);
+  
+  // Read current filter state
+  const query = taskSearchInput ? taskSearchInput.value.trim().toLowerCase() : "";
+  const selectedSubject = subjectFilterSelect ? subjectFilterSelect.value.toLowerCase() : "all";
 
-    setPersistence(auth, inMemoryPersistence).catch((err) => {
-      console.warn("Auth persistence status:", err);
-    });
+  // Filter tasks in memory before rendering
+  const activeIds = Array.from(cachedTaskMap.keys()).filter((id) => {
+    if (archivedIds.includes(id)) return false;
 
-    enableIndexedDbPersistence(db).catch((err) => {
-      console.warn("Offline persistence status:", err.code);
-    });
+    const task = cachedTaskMap.get(id) || {};
+    const title = (task.title || "").toLowerCase();
+    const body = (task.body || "").toLowerCase();
+    const subject = (task.subject || "").toLowerCase();
 
-    // DOM Elements
-    const taskGrid = document.getElementById("taskGrid");
-    const expandModal = document.getElementById("expandModal");
-    const adminModal = document.getElementById("adminModal");
-    const adminAuthStep = document.getElementById("adminAuthStep");
-    const adminFormStep = document.getElementById("adminFormStep");
-    const passcodeError = document.getElementById("passcodeError");
-    const themeToggleBtn = document.getElementById("themeToggle");
-    const netStatusPill = document.getElementById("netStatusPill");
-    const saveBanner = document.getElementById("saveBanner");
-    const btnInstallPWA = document.getElementById("btnInstallPWA");
-    const archiveModal = document.getElementById("archiveModal");
-    const btnOpenArchive = document.getElementById("btnOpenArchive");
-    const btnCloseArchive = document.getElementById("btnCloseArchive");
-    const archiveList = document.getElementById("archiveList");
+    // Subject Filter Match
+    if (selectedSubject !== "all" && subject !== selectedSubject) {
+      return false;
+    }
+
+    // Keyword Search Match (Title or Description)
+    if (query && !title.includes(query) && !body.includes(query)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Empty state handling
+  if (activeIds.length === 0) {
+    const isFiltering = query !== "" || selectedSubject !== "all";
+    taskGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+        ${isFiltering ? 'No matching tasks found for your search/filter.' : 'No active tasks published by officers yet.'}
+      </div>`;
+    return;
+  }
+
+  activeIds.forEach((id) => {
+    renderTaskCard(id, cachedTaskMap.get(id));
+  });
+}
 
     /* Local Storage Helpers */
     function getPersonalTaskState(taskId) {
