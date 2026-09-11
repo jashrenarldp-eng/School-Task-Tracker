@@ -460,6 +460,7 @@ body.is-officer .admin-only { display: flex !important; }
         <div class="action-pills">
           <button id="btnNotifPermission" class="btn-pill btn-dark">🔔 Enable Alerts</button>
           <button id="btnAdminAccess" class="btn-pill btn-dark">🔐 Task Maker</button>
+          <button id="btnLogoutOfficer" class="btn-pill btn-dark admin-only">🚪 Logout Officer</button>
           <button id="themeToggle" class="btn-pill btn-dark">Dark Mode</button>  
           <button id="btnInstallPWA" class="btn-pill btn-dark" style="display: none;">📥 Install App</button>
           <div id="netStatusPill" class="btn-pill btn-light-green">⚡ Syncing Live</div>
@@ -1075,142 +1076,60 @@ body.is-officer .admin-only { display: flex !important; }
     console.error("Firestore Read Error: ", error);
   });
 
-  /* ==========================================
-     8. OFFICER AUTH & ADMIN ACTIONS (UPDATE 8.3)
-     ========================================== */
-  function switchAdminStep(showForm) {
-    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
-    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
-  }
+/* ==========================================
+   8. OFFICER AUTH & ADMIN ACTIONS
+   ========================================== */
+function switchAdminStep(showForm) {
+  if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
+  if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
+}
 
-  onAuthStateChanged(auth, (user) => {
-    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-      isOfficerAuthenticated = true;
-      document.body.classList.add("is-officer");
-      switchAdminStep(true);
-    } else {
-      isOfficerAuthenticated = false;
-      document.body.classList.remove("is-officer");
-      switchAdminStep(false);
-    }
-  });
-
-  document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
-    expandModal?.classList.remove("active");
-  });
-
-  document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
-    adminModal?.classList.add("active");
-  });
-
-  document.getElementById("btnCloseAdmin")?.addEventListener("click", async () => {
-    adminModal?.classList.remove("active");
-    await signOut(auth);
+// Keep officer UI active across the entire app while signed in
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+    isOfficerAuthenticated = true;
+    document.body.classList.add("is-officer");
+    switchAdminStep(true);
+  } else {
+    isOfficerAuthenticated = false;
+    document.body.classList.remove("is-officer");
     switchAdminStep(false);
-  });
-
-  document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
-    e.preventDefault();
-    
-    const emailInput = document.getElementById("adminEmail")?.value.trim();
-    const passwordInput = document.getElementById("adminPasscode")?.value;
-
-    if (!emailInput || !passwordInput) {
-      if (passcodeError) {
-        passcodeError.textContent = "Please enter both email and password.";
-        passcodeError.style.display = "block";
-      }
-      return;
-    }
-
-    try {
-      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-      if (passcodeError) passcodeError.style.display = "none";
-      const passcodeEl = document.getElementById("adminPasscode");
-      if (passcodeEl) passcodeEl.value = "";
-      switchAdminStep(true);
-    } catch (error) {
-      console.error("Auth Error Code:", error.code, error.message);
-      if (passcodeError) {
-        if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-          passcodeError.textContent = "Invalid email or password. Access denied.";
-        } else {
-          passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
-        }
-        passcodeError.style.display = "block";
-      }
-    }
-  });
-
-  document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    
-    const newTask = {
-      title: document.getElementById("adminTaskTitle")?.value || "",
-      subject: document.getElementById("adminTaskSubject")?.value || "",
-      dueDate: document.getElementById("adminTaskDueDate")?.value || "",
-      body: document.getElementById("adminTaskBody")?.value || "",
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      await addDoc(collection(db, "tasks"), newTask);
-      document.getElementById("adminTaskForm")?.reset();
-      adminModal?.classList.remove("active");
-      await signOut(auth);
-      switchAdminStep(false);
-      alert("Task successfully published!");
-    } catch (err) {
-      alert("Failed to publish task: " + err.message);
-    }
-  });
-
-  /* Edit Task Handlers */
-  function openEditModal(taskId, data) {
-    document.getElementById("editTaskId").value = taskId;
-    document.getElementById("editTaskTitle").value = data.title || "";
-    document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
-    document.getElementById("editTaskDueDate").value = data.dueDate || "";
-    document.getElementById("editTaskBody").value = data.body || "";
-    editModal?.classList.add("active");
   }
+});
 
-  document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
-    editModal?.classList.remove("active");
-  });
+// Simply hide the modal without signing out the officer session
+document.getElementById("btnCloseAdmin")?.addEventListener("click", () => {
+  adminModal?.classList.remove("active");
+});
 
-  document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const taskId = document.getElementById("editTaskId")?.value;
+// Explicit Officer Logout button in the header
+document.getElementById("btnLogoutOfficer")?.addEventListener("click", async () => {
+  await signOut(auth);
+  alert("Officer session closed.");
+});
 
-    const updatedFields = {
-      title: document.getElementById("editTaskTitle")?.value || "",
-      subject: document.getElementById("editTaskSubject")?.value || "",
-      dueDate: document.getElementById("editTaskDueDate")?.value || "",
-      body: document.getElementById("editTaskBody")?.value || "",
-      updatedAt: new Date().toISOString()
-    };
+// Publish Task Form (Removes auto-signOut so officer stays logged in to edit)
+document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  const newTask = {
+    title: document.getElementById("adminTaskTitle")?.value || "",
+    subject: document.getElementById("adminTaskSubject")?.value || "",
+    dueDate: document.getElementById("adminTaskDueDate")?.value || "",
+    body: document.getElementById("adminTaskBody")?.value || "",
+    createdAt: new Date().toISOString()
+  };
 
-    try {
-      await updateDoc(doc(db, "tasks", taskId), updatedFields);
-      editModal?.classList.remove("active");
-      alert("Task updated successfully!");
-    } catch (err) {
-      alert("Failed to update task: " + err.message);
-    }
-  });
-
-  /* Delete Task Handler */
-  async function deleteTask(taskId) {
-    if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
-    
-    try {
-      await deleteDoc(doc(db, "tasks", taskId));
-      alert("Task permanently deleted.");
-    } catch (err) {
-      alert("Error deleting task: " + err.message);
-    }
+  try {
+    await addDoc(collection(db, "tasks"), newTask);
+    document.getElementById("adminTaskForm")?.reset();
+    adminModal?.classList.remove("active");
+    // Removed: await signOut(auth);
+    alert("Task successfully published!");
+  } catch (err) {
+    alert("Failed to publish task: " + err.message);
   }
+});
 </script>
 </body>
 </html>
