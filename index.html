@@ -386,6 +386,35 @@
       transition: background 0.2s;
     }
     .btn-unarchive:hover { background: #16a34a; }
+    .filter-toolbar {
+     display: flex;
+     gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+    }
+
+    .filter-input {
+     padding: 10px 14px;
+     border-radius: 10px;
+     border: 1px solid #cbd5e1;
+     font-size: 0.88rem;
+     background: white;
+     color: #0f172a;
+     outline: none;
+     transition: border-color 0.2s;
+    }
+
+    .filter-input:focus {
+    border-color: #2563eb;
+    }
+
+    body.dark-mode .filter-input {
+    background: #1e293b;
+    color: #f8fafc;
+    border-color: #334155;
+    }
+    
   </style>
 </head>
 
@@ -432,6 +461,30 @@
         <h2>Class tasks</h2>
       </div>
       <div id="saveBanner" class="status-banner btn-light-green">🟢 Live Cloud Connection Active</div>
+
+  <!-- Filter Modal -->
+      <div class="filter-toolbar">
+  <input 
+    type="text" 
+    id="taskSearchInput" 
+    class="filter-input" 
+    placeholder="🔍 Search tasks by title or content..." 
+    style="flex: 1; min-width: 240px;" />
+        
+  <select id="subjectFilterSelect" class="filter-input" style="min-width: 180px; cursor: pointer;">
+    <option value="all">All Subjects</option>
+    <option value="chem">CHEM 015</option>
+    <option value="math101">MATH 101</option>
+    <option value="pathfit">PATHFIT 1</option>
+    <option value="inen">INEN 101</option>
+    <option value="geed004">GEED 004</option>
+    <option value="geed032">GEED 032</option>
+    <option value="cmpe">CMPE 011</option>
+    <option value="nstp">NSTP 1 - CWTS</option>
+  </select>
+</div>
+
+
       <div id="taskGrid" class="task-grid">
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; opacity: 0.7;">
           Loading real-time tasks...
