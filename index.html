@@ -415,31 +415,32 @@
     border-color: #334155;
     }
 
-    .btn-edit-icon, .btn-delete-icon {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-    }
+/* Admin Action Icons */
+.btn-edit-icon, .btn-delete-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
 
-   .btn-delete-icon { background: rgba(239, 68, 68, 0.4); }
-   .btn-delete-icon:hover { background: rgba(239, 68, 68, 0.8); }
-   .btn-edit-icon:hover { background: rgba(255, 255, 255, 0.35); }
+.btn-delete-icon { background: rgba(239, 68, 68, 0.4); }
+.btn-delete-icon:hover { background: rgba(239, 68, 68, 0.8); }
+.btn-edit-icon:hover { background: rgba(255, 255, 255, 0.35); }
 
-   /* Hide admin controls by default for regular students */
-   .admin-only { display: none !important; }
-   /* Display controls when body has officer class */
-   body.is-officer .admin-only { display: flex !important; }
-    
+/* Hide admin controls from regular students */
+.admin-only { display: none !important; }
+
+/* Show admin controls when logged in as officer */
+body.is-officer .admin-only { display: flex !important; }
   </style>
 </head>
 
