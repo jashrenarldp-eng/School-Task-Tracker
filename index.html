@@ -586,459 +586,493 @@
 
   
 <!-- SCRIPT -->
-  // 1. DOM Lookups
-const taskSearchInput = document.getElementById("taskSearchInput");
-const subjectFilterSelect = document.getElementById("subjectFilterSelect");
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    enableIndexedDbPersistence, 
+    collection, 
+    addDoc, 
+    onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    setPersistence,
+    inMemoryPersistence,
+    onAuthStateChanged,
+    signOut 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// 2. Attach Live Filter Listeners
-taskSearchInput?.addEventListener("input", renderActiveTasks);
-subjectFilterSelect?.addEventListener("change", renderActiveTasks);
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUSmond8b9lMprdHjnvnuRygaRdC9kbxo",
+    authDomain: "takeitdoit-app.firebaseapp.com",
+    projectId: "takeitdoit-app",
+    storageBucket: "takeitdoit-app.firebasestorage.app",
+    messagingSenderId: "1057165971311",
+    appId: "1:1057165971311:web:801032e04ea0fb7d27e29a",
+    measurementId: "G-S8PC6K718R"
+  };
 
-// 3. Updated renderActiveTasks function
-function renderActiveTasks() {
-  if (!taskGrid) return;
-  taskGrid.innerHTML = "";
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
 
-  const archivedList = getArchivedTasks();
-  const archivedIds = archivedList.map(item => item.id);
-  
-  // Read current filter state
-  const query = taskSearchInput ? taskSearchInput.value.trim().toLowerCase() : "";
-  const selectedSubject = subjectFilterSelect ? subjectFilterSelect.value.toLowerCase() : "all";
+  const ALLOWED_OFFICER_EMAIL = "officer@class.com";
+  let cachedTaskMap = new Map();
 
-  // Filter tasks in memory before rendering
-  const activeIds = Array.from(cachedTaskMap.keys()).filter((id) => {
-    if (archivedIds.includes(id)) return false;
-
-    const task = cachedTaskMap.get(id) || {};
-    const title = (task.title || "").toLowerCase();
-    const body = (task.body || "").toLowerCase();
-    const subject = (task.subject || "").toLowerCase();
-
-    // Subject Filter Match
-    if (selectedSubject !== "all" && subject !== selectedSubject) {
-      return false;
-    }
-
-    // Keyword Search Match (Title or Description)
-    if (query && !title.includes(query) && !body.includes(query)) {
-      return false;
-    }
-
-    return true;
+  setPersistence(auth, inMemoryPersistence).catch((err) => {
+    console.warn("Auth persistence status:", err);
   });
 
-  // Empty state handling
-  if (activeIds.length === 0) {
-    const isFiltering = query !== "" || selectedSubject !== "all";
-    taskGrid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-        ${isFiltering ? 'No matching tasks found for your search/filter.' : 'No active tasks published by officers yet.'}
-      </div>`;
-    return;
+  enableIndexedDbPersistence(db).catch((err) => {
+    console.warn("Offline persistence status:", err.code);
+  });
+
+  /* ==========================================
+     1. DOM ELEMENTS
+     ========================================== */
+  const taskGrid = document.getElementById("taskGrid");
+  const expandModal = document.getElementById("expandModal");
+  const adminModal = document.getElementById("adminModal");
+  const adminAuthStep = document.getElementById("adminAuthStep");
+  const adminFormStep = document.getElementById("adminFormStep");
+  const passcodeError = document.getElementById("passcodeError");
+  const themeToggleBtn = document.getElementById("themeToggle");
+  const netStatusPill = document.getElementById("netStatusPill");
+  const saveBanner = document.getElementById("saveBanner");
+  const btnInstallPWA = document.getElementById("btnInstallPWA");
+  const archiveModal = document.getElementById("archiveModal");
+  const btnOpenArchive = document.getElementById("btnOpenArchive");
+  const btnCloseArchive = document.getElementById("btnCloseArchive");
+  const archiveList = document.getElementById("archiveList");
+  const taskSearchInput = document.getElementById("taskSearchInput");
+  const subjectFilterSelect = document.getElementById("subjectFilterSelect");
+
+  /* ==========================================
+     2. LOCAL STORAGE & ARCHIVE HELPERS
+     ========================================== */
+  function getPersonalTaskState(taskId) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    return !!localData[taskId];
   }
 
-  activeIds.forEach((id) => {
-    renderTaskCard(id, cachedTaskMap.get(id));
-  });
-}
+  function setPersonalTaskState(taskId, isCompleted) {
+    const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
+    localData[taskId] = isCompleted;
+    localStorage.setItem("user_task_progress", JSON.stringify(localData));
+  }
 
-    /* Local Storage Helpers */
-    function getPersonalTaskState(taskId) {
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-      return !!localData[taskId];
-    }
+  function getArchivedTasks() {
+    return JSON.parse(localStorage.getItem("takeitdoit_archived")) || [];
+  }
 
-    function setPersonalTaskState(taskId, isCompleted) {
-      const localData = JSON.parse(localStorage.getItem("user_task_progress")) || {};
-      localData[taskId] = isCompleted;
-      localStorage.setItem("user_task_progress", JSON.stringify(localData));
-    }
-
-    function getArchivedTasks() {
-      return JSON.parse(localStorage.getItem("takeitdoit_archived")) || [];
-    }
-
-    function archiveTask(taskId) {
-      const archived = getArchivedTasks();
-      if (!archived.some(item => item.id === taskId)) {
-        archived.push({ id: taskId, archivedAt: Date.now() });
-        localStorage.setItem("takeitdoit_archived", JSON.stringify(archived));
-      }
-      const cardEl = document.querySelector(`[data-id="${taskId}"]`);
-      if (cardEl) cardEl.remove();
-
-      if (taskGrid && taskGrid.children.length === 0) {
-        taskGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-            No active tasks remaining.
-          </div>`;
-      }
-    }
-
-    function unarchiveTask(taskId) {
-      let archived = getArchivedTasks();
-      archived = archived.filter(item => item.id !== taskId);
+  function archiveTask(taskId) {
+    const archived = getArchivedTasks();
+    if (!archived.some(item => item.id === taskId)) {
+      archived.push({ id: taskId, archivedAt: Date.now() });
       localStorage.setItem("takeitdoit_archived", JSON.stringify(archived));
-      renderArchiveList();
-      renderActiveTasks();
+    }
+    renderActiveTasks();
+  }
+
+  function unarchiveTask(taskId) {
+    let archived = getArchivedTasks();
+    archived = archived.filter(item => item.id !== taskId);
+    localStorage.setItem("takeitdoit_archived", JSON.stringify(archived));
+    renderArchiveList();
+    renderActiveTasks();
+  }
+
+  /* ==========================================
+     3. ARCHIVE MODAL RENDER
+     ========================================== */
+  function renderArchiveList() {
+    if (!archiveList) return;
+    const archived = getArchivedTasks();
+
+    if (archived.length === 0) {
+      archiveList.innerHTML = `<div style="text-align: center; padding: 20px; opacity: 0.7;">No archived tasks.</div>`;
+      return;
     }
 
-    /* Archive Modal UI rendering */
-    function renderArchiveList() {
-      if (!archiveList) return;
-      const archived = getArchivedTasks();
-
-      if (archived.length === 0) {
-        archiveList.innerHTML = `<div style="text-align: center; padding: 20px; opacity: 0.7;">No archived tasks.</div>`;
-        return;
-      }
-
-      archiveList.innerHTML = "";
-      archived.forEach((item) => {
-        const taskData = cachedTaskMap.get(item.id) || { title: "Archived Task (" + item.id + ")" };
-        const div = document.createElement("div");
-        div.className = "archive-item";
-        div.innerHTML = `
-          <div>
-            <div style="font-weight: 700; font-size: 0.9rem;">${taskData.title}</div>
-            <div style="font-size: 0.75rem; opacity: 0.7;">Archived locally</div>
-          </div>
-          <button class="btn-unarchive" data-id="${item.id}">Restore</button>
-        `;
-
-        div.querySelector(".btn-unarchive").addEventListener("click", () => {
-          unarchiveTask(item.id);
-        });
-
-        archiveList.appendChild(div);
-      });
-    }
-
-    btnOpenArchive?.addEventListener("click", () => {
-      renderArchiveList();
-      archiveModal?.classList.add("active");
-    });
-
-    btnCloseArchive?.addEventListener("click", () => {
-      archiveModal?.classList.remove("active");
-    });
-
-    /* Theme Toggle */
-    function applyTheme(theme) {
-      if (!themeToggleBtn) return;
-      if (theme === "dark") {
-        document.body.classList.add("dark-mode");
-        themeToggleBtn.textContent = "☀️ Light Mode";
-      } else {
-        document.body.classList.remove("dark-mode");
-        themeToggleBtn.textContent = "🌙 Dark Mode";
-      }
-    }
-
-    const savedTheme = localStorage.getItem("app_theme") || 
-      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    applyTheme(savedTheme);
-
-    themeToggleBtn?.addEventListener("click", () => {
-      const isDark = document.body.classList.toggle("dark-mode");
-      const currentTheme = isDark ? "dark" : "light";
-      localStorage.setItem("app_theme", currentTheme);
-      applyTheme(currentTheme);
-    });
-
-    /* Network Monitoring */
-    function updateNetworkStatus() {
-      if (navigator.onLine) {
-        if (netStatusPill) {
-          netStatusPill.className = "btn-pill btn-light-green";
-          netStatusPill.textContent = "⚡ Syncing Live";
-        }
-        if (saveBanner) {
-          saveBanner.className = "status-banner btn-light-green";
-          saveBanner.textContent = "🟢 Live Cloud Connection Active";
-        }
-      } else {
-        if (netStatusPill) {
-          netStatusPill.className = "btn-pill btn-offline";
-          netStatusPill.textContent = "📡 Offline Mode";
-        }
-        if (saveBanner) {
-          saveBanner.className = "status-banner btn-offline";
-          saveBanner.textContent = "🟠 Offline - Serving local cached tasks";
-        }
-      }
-    }
-
-    window.addEventListener("online", updateNetworkStatus);
-    window.addEventListener("offline", updateNetworkStatus);
-    updateNetworkStatus();
-
-    /* PWA Prompt */
-    let deferredPrompt;
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (btnInstallPWA) btnInstallPWA.style.display = "inline-flex";
-    });
-
-    btnInstallPWA?.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted" && btnInstallPWA) {
-        btnInstallPWA.style.display = "none";
-      }
-      deferredPrompt = null;
-    });
-
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch((err) => {
-          console.warn("Service Worker registration failed:", err);
-        });
-      });
-    }
-
-    /* Web Notifications */
-    function sendLocalNotification(title, body, tag) {
-      if (!("Notification" in window) || Notification.permission !== "granted") return;
-
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.ready
-          .then((registration) => {
-            registration.showNotification(title, {
-              body: body,
-              icon: "./icon-192.png",
-              badge: "./badge.png",
-              tag: tag,
-              vibrate: [200, 100, 200]
-            });
-          })
-          .catch(() => {
-            new Notification(title, { body, icon: "./icon-192.png", tag });
-          });
-      } else {
-        new Notification(title, { body, icon: "./icon-192.png", tag });
-      }
-    }
-
-    document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
-      if (!("Notification" in window)) {
-        alert("This browser does not support web notifications.");
-        return;
-      }
-      
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        alert("Notifications enabled!");
-        sendLocalNotification("Test Alert", "Notifications are active!", "test-id");
-      } else if (permission === "denied") {
-        alert("Notifications were blocked in your browser settings.");
-      }
-    });
-
-    /* Real-Time Firestore Listener */
-    let isInitialLoad = true;
-
-    onSnapshot(collection(db, "tasks"), (snapshot) => {
-      if (!taskGrid) return;
-
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added" && !isInitialLoad) {
-          const taskData = change.doc.data();
-          const subject = (taskData.subject || "GENERAL").toUpperCase();
-          const title = taskData.title || "New Task Posted";
-          sendLocalNotification(`📌 New Task [${subject}]`, title, change.doc.id);
-        }
-      });
-
-      isInitialLoad = false;
-      cachedTaskMap.clear();
-
-      snapshot.docs.forEach((docSnap) => {
-        cachedTaskMap.set(docSnap.id, docSnap.data());
-      });
-
-      renderActiveTasks();
-    }, (error) => {
-      console.error("Firestore Read Error: ", error);
-    });
-
-    function renderActiveTasks() {
-      if (!taskGrid) return;
-      taskGrid.innerHTML = "";
-
-      const archivedList = getArchivedTasks();
-      const archivedIds = archivedList.map(item => item.id);
-      
-      const activeIds = Array.from(cachedTaskMap.keys()).filter(id => !archivedIds.includes(id));
-
-      if (activeIds.length === 0) {
-        taskGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-            No active tasks published by officers yet.
-          </div>`;
-        return;
-      }
-
-      activeIds.forEach((id) => {
-        renderTaskCard(id, cachedTaskMap.get(id));
-      });
-    }
-
-    function renderTaskCard(id, data) {
-      if (!taskGrid) return;
-      const isCompleted = getPersonalTaskState(id);
-      const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-      
-      const card = document.createElement("div");
-      card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
-      card.setAttribute("data-id", id);
-
-      card.innerHTML = `
+    archiveList.innerHTML = "";
+    archived.forEach((item) => {
+      const taskData = cachedTaskMap.get(item.id) || { title: "Archived Task (" + item.id + ")" };
+      const div = document.createElement("div");
+      div.className = "archive-item";
+      div.innerHTML = `
         <div>
-          <div class="card-top">
-            <div class="card-controls">
-              <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
-              <button class="btn-expand-icon" title="Expand task view">⤢</button>
-              <button class="btn-archive-icon" title="Archive task">📦</button>
-            </div>
-            <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
-          </div>
-          <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-          <div class="due-date">${data.dueDate || ''}</div>
+          <div style="font-weight: 700; font-size: 0.9rem;">${taskData.title}</div>
+          <div style="font-size: 0.75rem; opacity: 0.7;">Archived locally</div>
         </div>
-        <div class="card-body">${data.body || ''}</div>
+        <button class="btn-unarchive" data-id="${item.id}">Restore</button>
       `;
 
-      const checkbox = card.querySelector(".checkbox");
-      const expandBtn = card.querySelector(".btn-expand-icon");
-      const archiveBtn = card.querySelector(".btn-archive-icon");
-
-      const toggleCompletion = () => {
-        const newState = !getPersonalTaskState(id);
-        setPersonalTaskState(id, newState);
-        checkbox.checked = newState;
-        card.classList.toggle("completed", newState);
-      };
-
-      checkbox?.addEventListener("change", (e) => {
-        e.stopPropagation();
-        setPersonalTaskState(id, checkbox.checked);
-        card.classList.toggle("completed", checkbox.checked);
+      div.querySelector(".btn-unarchive").addEventListener("click", () => {
+        unarchiveTask(item.id);
       });
 
-      archiveBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        archiveTask(id);
-      });
+      archiveList.appendChild(div);
+    });
+  }
 
-      expandBtn?.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const expBadge = document.getElementById("expBadge");
-        const expTitle = document.getElementById("expTitle");
-        const expDueDate = document.getElementById("expDueDate");
-        const expBody = document.getElementById("expBody");
+  btnOpenArchive?.addEventListener("click", () => {
+    renderArchiveList();
+    archiveModal?.classList.add("active");
+  });
 
-        if (expBadge) expBadge.textContent = (data.subject || 'GENERAL').toUpperCase();
-        if (expTitle) expTitle.textContent = data.title || 'Untitled Task';
-        if (expDueDate) expDueDate.textContent = data.dueDate || '';
-        if (expBody) expBody.innerHTML = data.body || '';
-        if (expandModal) expandModal.classList.add("active");
-      });
+  btnCloseArchive?.addEventListener("click", () => {
+    archiveModal?.classList.remove("active");
+  });
 
-      card.addEventListener("click", (e) => {
-        if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("btn-archive-icon") || e.target.classList.contains("checkbox")) return;
-        toggleCompletion();
-      });
+  /* ==========================================
+     4. SEARCH & SUBJECT FILTERING (UPDATE 8.2)
+     ========================================== */
+  taskSearchInput?.addEventListener("input", renderActiveTasks);
+  subjectFilterSelect?.addEventListener("change", renderActiveTasks);
 
-      taskGrid.appendChild(card);
-    }
+  function renderActiveTasks() {
+    if (!taskGrid) return;
+    taskGrid.innerHTML = "";
 
-    /* Modals & Officer Auth */
-    document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
-      expandModal?.classList.remove("active");
+    const archivedList = getArchivedTasks();
+    const archivedIds = archivedList.map(item => item.id);
+    
+    const query = taskSearchInput ? taskSearchInput.value.trim().toLowerCase() : "";
+    const selectedSubject = subjectFilterSelect ? subjectFilterSelect.value.toLowerCase() : "all";
+
+    const activeIds = Array.from(cachedTaskMap.keys()).filter((id) => {
+      if (archivedIds.includes(id)) return false;
+
+      const task = cachedTaskMap.get(id) || {};
+      const title = (task.title || "").toLowerCase();
+      const body = (task.body || "").toLowerCase();
+      const subject = (task.subject || "").toLowerCase();
+
+      if (selectedSubject !== "all" && subject !== selectedSubject) {
+        return false;
+      }
+
+      if (query && !title.includes(query) && !body.includes(query)) {
+        return false;
+      }
+
+      return true;
     });
 
-    document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
-      adminModal?.classList.add("active");
-    });
-
-    function switchAdminStep(showForm) {
-      if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
-      if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
+    if (activeIds.length === 0) {
+      const isFiltering = query !== "" || selectedSubject !== "all";
+      taskGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          ${isFiltering ? 'No matching tasks found for your search/filter.' : 'No active tasks published by officers yet.'}
+        </div>`;
+      return;
     }
 
-    document.getElementById("btnCloseAdmin")?.addEventListener("click", async () => {
+    activeIds.forEach((id) => {
+      renderTaskCard(id, cachedTaskMap.get(id));
+    });
+  }
+
+  function renderTaskCard(id, data) {
+    if (!taskGrid) return;
+    const isCompleted = getPersonalTaskState(id);
+    const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
+    
+    const card = document.createElement("div");
+    card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
+    card.setAttribute("data-id", id);
+
+    card.innerHTML = `
+      <div>
+        <div class="card-top">
+          <div class="card-controls">
+            <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
+            <button class="btn-expand-icon" title="Expand task view">⤢</button>
+            <button class="btn-archive-icon" title="Archive task">📦</button>
+          </div>
+          <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+        </div>
+        <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+        <div class="due-date">${data.dueDate || ''}</div>
+      </div>
+      <div class="card-body">${data.body || ''}</div>
+    `;
+
+    const checkbox = card.querySelector(".checkbox");
+    const expandBtn = card.querySelector(".btn-expand-icon");
+    const archiveBtn = card.querySelector(".btn-archive-icon");
+
+    const toggleCompletion = () => {
+      const newState = !getPersonalTaskState(id);
+      setPersonalTaskState(id, newState);
+      checkbox.checked = newState;
+      card.classList.toggle("completed", newState);
+    };
+
+    checkbox?.addEventListener("change", (e) => {
+      e.stopPropagation();
+      setPersonalTaskState(id, checkbox.checked);
+      card.classList.toggle("completed", checkbox.checked);
+    });
+
+    archiveBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      archiveTask(id);
+    });
+
+    expandBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const expBadge = document.getElementById("expBadge");
+      const expTitle = document.getElementById("expTitle");
+      const expDueDate = document.getElementById("expDueDate");
+      const expBody = document.getElementById("expBody");
+
+      if (expBadge) expBadge.textContent = (data.subject || 'GENERAL').toUpperCase();
+      if (expTitle) expTitle.textContent = data.title || 'Untitled Task';
+      if (expDueDate) expDueDate.textContent = data.dueDate || '';
+      if (expBody) expBody.innerHTML = data.body || '';
+      if (expandModal) expandModal.classList.add("active");
+    });
+
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "A" || e.target.classList.contains("btn-expand-icon") || e.target.classList.contains("btn-archive-icon") || e.target.classList.contains("checkbox")) return;
+      toggleCompletion();
+    });
+
+    taskGrid.appendChild(card);
+  }
+
+  /* ==========================================
+     5. THEME & NETWORK
+     ========================================== */
+  function applyTheme(theme) {
+    if (!themeToggleBtn) return;
+    if (theme === "dark") {
+      document.body.classList.add("dark-mode");
+      themeToggleBtn.textContent = "☀️ Light Mode";
+    } else {
+      document.body.classList.remove("dark-mode");
+      themeToggleBtn.textContent = "🌙 Dark Mode";
+    }
+  }
+
+  const savedTheme = localStorage.getItem("app_theme") || 
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  applyTheme(savedTheme);
+
+  themeToggleBtn?.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark-mode");
+    const currentTheme = isDark ? "dark" : "light";
+    localStorage.setItem("app_theme", currentTheme);
+    applyTheme(currentTheme);
+  });
+
+  function updateNetworkStatus() {
+    if (navigator.onLine) {
+      if (netStatusPill) {
+        netStatusPill.className = "btn-pill btn-light-green";
+        netStatusPill.textContent = "⚡ Syncing Live";
+      }
+      if (saveBanner) {
+        saveBanner.className = "status-banner btn-light-green";
+        saveBanner.textContent = "🟢 Live Cloud Connection Active";
+      }
+    } else {
+      if (netStatusPill) {
+        netStatusPill.className = "btn-pill btn-offline";
+        netStatusPill.textContent = "📡 Offline Mode";
+      }
+      if (saveBanner) {
+        saveBanner.className = "status-banner btn-offline";
+        saveBanner.textContent = "🟠 Offline - Serving local cached tasks";
+      }
+    }
+  }
+
+  window.addEventListener("online", updateNetworkStatus);
+  window.addEventListener("offline", updateNetworkStatus);
+  updateNetworkStatus();
+
+  /* PWA Prompt */
+  let deferredPrompt;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (btnInstallPWA) btnInstallPWA.style.display = "inline-flex";
+  });
+
+  btnInstallPWA?.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted" && btnInstallPWA) {
+      btnInstallPWA.style.display = "none";
+    }
+    deferredPrompt = null;
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch((err) => {
+        console.warn("Service Worker registration failed:", err);
+      });
+    });
+  }
+
+  /* Notifications */
+  function sendLocalNotification(title, body, tag) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          registration.showNotification(title, {
+            body: body,
+            icon: "./icon-192.png",
+            badge: "./badge.png",
+            tag: tag,
+            vibrate: [200, 100, 200]
+          });
+        })
+        .catch(() => {
+          new Notification(title, { body, icon: "./icon-192.png", tag });
+        });
+    } else {
+      new Notification(title, { body, icon: "./icon-192.png", tag });
+    }
+  }
+
+  document.getElementById("btnNotifPermission")?.addEventListener("click", async () => {
+    if (!("Notification" in window)) {
+      alert("This browser does not support web notifications.");
+      return;
+    }
+    
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      alert("Notifications enabled!");
+      sendLocalNotification("Test Alert", "Notifications are active!", "test-id");
+    } else if (permission === "denied") {
+      alert("Notifications were blocked in your browser settings.");
+    }
+  });
+
+  /* ==========================================
+     6. FIRESTORE REAL-TIME LISTENER
+     ========================================== */
+  let isInitialLoad = true;
+
+  onSnapshot(collection(db, "tasks"), (snapshot) => {
+    if (!taskGrid) return;
+
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added" && !isInitialLoad) {
+        const taskData = change.doc.data();
+        const subject = (taskData.subject || "GENERAL").toUpperCase();
+        const title = taskData.title || "New Task Posted";
+        sendLocalNotification(`📌 New Task [${subject}]`, title, change.doc.id);
+      }
+    });
+
+    isInitialLoad = false;
+    cachedTaskMap.clear();
+
+    snapshot.docs.forEach((docSnap) => {
+      cachedTaskMap.set(docSnap.id, docSnap.data());
+    });
+
+    renderActiveTasks();
+  }, (error) => {
+    console.error("Firestore Read Error: ", error);
+  });
+
+  /* ==========================================
+     7. OFFICER AUTH & MODALS
+     ========================================== */
+  document.getElementById("btnCloseExpand")?.addEventListener("click", () => {
+    expandModal?.classList.remove("active");
+  });
+
+  document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
+    adminModal?.classList.add("active");
+  });
+
+  function switchAdminStep(showForm) {
+    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
+    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
+  }
+
+  document.getElementById("btnCloseAdmin")?.addEventListener("click", async () => {
+    adminModal?.classList.remove("active");
+    await signOut(auth);
+    switchAdminStep(false);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+      switchAdminStep(true);
+    } else {
+      switchAdminStep(false);
+    }
+  });
+
+  document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    const emailInput = document.getElementById("adminEmail")?.value.trim();
+    const passwordInput = document.getElementById("adminPasscode")?.value;
+
+    if (!emailInput || !passwordInput) {
+      if (passcodeError) {
+        passcodeError.textContent = "Please enter both email and password.";
+        passcodeError.style.display = "block";
+      }
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+      if (passcodeError) passcodeError.style.display = "none";
+      const passcodeEl = document.getElementById("adminPasscode");
+      if (passcodeEl) passcodeEl.value = "";
+      switchAdminStep(true);
+    } catch (error) {
+      console.error("Auth Error Code:", error.code, error.message);
+      if (passcodeError) {
+        if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+          passcodeError.textContent = "Invalid email or password. Access denied.";
+        } else {
+          passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
+        }
+        passcodeError.style.display = "block";
+      }
+    }
+  });
+
+  document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const newTask = {
+      title: document.getElementById("adminTaskTitle")?.value || "",
+      subject: document.getElementById("adminTaskSubject")?.value || "",
+      dueDate: document.getElementById("adminTaskDueDate")?.value || "",
+      body: document.getElementById("adminTaskBody")?.value || "",
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, "tasks"), newTask);
+      document.getElementById("adminTaskForm")?.reset();
       adminModal?.classList.remove("active");
       await signOut(auth);
       switchAdminStep(false);
-    });
-
-    onAuthStateChanged(auth, (user) => {
-      if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-        switchAdminStep(true);
-      } else {
-        switchAdminStep(false);
-      }
-    });
-
-    document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
-      e.preventDefault();
-      
-      const emailInput = document.getElementById("adminEmail")?.value.trim();
-      const passwordInput = document.getElementById("adminPasscode")?.value;
-
-      if (!emailInput || !passwordInput) {
-        if (passcodeError) {
-          passcodeError.textContent = "Please enter both email and password.";
-          passcodeError.style.display = "block";
-        }
-        return;
-      }
-
-      try {
-        await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-        if (passcodeError) passcodeError.style.display = "none";
-        const passcodeEl = document.getElementById("adminPasscode");
-        if (passcodeEl) passcodeEl.value = "";
-        switchAdminStep(true);
-      } catch (error) {
-        console.error("Auth Error Code:", error.code, error.message);
-        if (passcodeError) {
-          if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-            passcodeError.textContent = "Invalid email or password. Access denied.";
-          } else {
-            passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
-          }
-          passcodeError.style.display = "block";
-        }
-      }
-    });
-
-    document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const newTask = {
-        title: document.getElementById("adminTaskTitle")?.value || "",
-        subject: document.getElementById("adminTaskSubject")?.value || "",
-        dueDate: document.getElementById("adminTaskDueDate")?.value || "",
-        body: document.getElementById("adminTaskBody")?.value || "",
-        createdAt: new Date().toISOString()
-      };
-
-      try {
-        await addDoc(collection(db, "tasks"), newTask);
-        document.getElementById("adminTaskForm")?.reset();
-        adminModal?.classList.remove("active");
-        await signOut(auth);
-        switchAdminStep(false);
-        alert("Task successfully published!");
-      } catch (err) {
-        alert("Failed to publish task: " + err.message);
-      }
-    });
-  </script>
+      alert("Task successfully published!");
+    } catch (err) {
+      alert("Failed to publish task: " + err.message);
+    }
+  });
+</script>
 </body>
 </html>
