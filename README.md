@@ -124,6 +124,17 @@ An offline-first, low-bandwidth assignment communication platform designed to br
 - Integrated an initial-load flag (isInitialLoad) into onSnapshot.docChanges() to ignore past task history on startup while instantly triggering system pop-ups for new assignment dispatches.
 - Built a user-gesture permission prompt (Notification.requestPermission) adhering to modern browser security guidelines.
 
+**Update 8.0: Task Organization**
+**Issue:**  As new tasks were posted and students completed them, the main board became heavily cluttered with finished tasks, making it difficult to focus on pending assignments and deadlines. 
+**Implementation:** Established localstorage management with archivedAt timestamps so students can move completed tasks out of their local devices. Implementations: 
+
+**Update 8.1: Archive Interface + Restore Feature**
+**Issue:**  After Update 8.0, tasks moved to the archived became invisible and inaccessible, preventing students from reviewing past assignments or recovering tasks archived by mistake. 
+**Implementations:**
+- Added a dedicated modal UI accessible via the View Archives header button to view all locally archived assignments. 
+- Integrated the unarchiveTask (taskId) handler to dynamically remove tasks from local storage archive records and re-render them back onto the active task board in real time.
+
+
 ### System Data Flow
 
 ```text
