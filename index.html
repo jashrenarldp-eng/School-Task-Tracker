@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
+<!-- HEAD -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,6 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+<!-- STYLE -->
+  
   <style>
     :root {
       --bg-grid: #e2e8df;
@@ -386,6 +389,7 @@
   </style>
 </head>
 
+<!-- BODY -->
 <body>
   <div class="container">
     <header class="top-header">
@@ -452,7 +456,7 @@
     <div class="glass-card-modal" style="max-width: 500px;">
       <button class="modal-close-btn" id="btnCloseAdmin">&times;</button>
 
-      <!-- Step 1: Officer Verification -->
+  <!-- Step 1: Officer Verification -->
       <div id="adminAuthStep" style="display: block;">
         <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">🔐 Officer Verification</h2>
         <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 16px;">
@@ -486,7 +490,7 @@
         </button>
       </div>
 
-      <!-- Step 2: Task Form -->
+    <!-- Step 2: Task Form -->
       <div id="adminFormStep" style="display: none;">
         <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">➕ Publish New Task</h2>
         <p style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 16px;">New tasks will instantly sync to all students' screens.</p>
@@ -514,7 +518,7 @@
     </div>
   </div>
 
-  <!-- Archive Modal Overlay -->
+<!-- Archive Modal Overlay -->
   <div id="archiveModal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
@@ -527,6 +531,8 @@
     </div>
   </div>
 
+  
+<!-- SCRIPT -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
