@@ -414,6 +414,31 @@
     color: #f8fafc;
     border-color: #334155;
     }
+
+    .btn-edit-icon, .btn-delete-icon {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    }
+
+   .btn-delete-icon { background: rgba(239, 68, 68, 0.4); }
+   .btn-delete-icon:hover { background: rgba(239, 68, 68, 0.8); }
+   .btn-edit-icon:hover { background: rgba(255, 255, 255, 0.35); }
+
+   /* Hide admin controls by default for regular students */
+   .admin-only { display: none !important; }
+   /* Display controls when body has officer class */
+   body.is-officer .admin-only { display: flex !important; }
     
   </style>
 </head>
@@ -584,6 +609,36 @@
     </div>
   </div>
 
+<!-- Edit Task Modal -->
+<div id="editModal" class="modal-overlay">
+  <div class="glass-card-modal" style="max-width: 500px;">
+    <button class="modal-close-btn" id="btnCloseEdit">&times;</button>
+    <h2 style="font-family: 'Georgia', serif; margin-top: 0; font-size: 1.5rem;">✏️ Edit Task</h2>
+    <form id="editTaskForm" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="hidden" id="editTaskId" />
+      <input type="text" id="editTaskTitle" class="admin-input" placeholder="Task Title" required />
+
+      <select id="editTaskSubject" class="admin-input" required>
+        <option value="chem">CHEM 015</option>
+        <option value="math101">MATH 101</option>
+        <option value="pathfit">PATHFIT 1</option>
+        <option value="inen">INEN 101</option>
+        <option value="geed004">GEED 004</option>
+        <option value="geed032">GEED 032</option>
+        <option value="cmpe">CMPE 011</option>
+        <option value="nstp">NSTP 1 - CWTS</option>
+      </select>
+
+      <input type="text" id="editTaskDueDate" class="admin-input" placeholder="Due Date" required />
+      <textarea id="editTaskBody" class="admin-input" placeholder="Task details..." rows="3" required style="font-family: inherit;"></textarea>
+      
+      <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
+        Save Changes
+      </button>
+    </form>
+  </div>
+</div>
+
   
 <!-- SCRIPT -->
   <script type="module">
@@ -593,7 +648,10 @@
     enableIndexedDbPersistence, 
     collection, 
     addDoc, 
-    onSnapshot
+    onSnapshot,
+    doc,
+    updateDoc,
+    deleteDoc
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
   import { 
     getAuth, 
@@ -1070,9 +1128,72 @@
       switchAdminStep(false);
       alert("Task successfully published!");
     } catch (err) {
-      alert("Failed to publish task: " + err.message);
-    }
-  });
+      alert("Failed to publish task: " + err.message);// Track Officer Authentication State
+let isOfficerAuthenticated = false;
+
+onAuthStateChanged(auth, (user) => {
+  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+    isOfficerAuthenticated = true;
+    document.body.classList.add("is-officer");
+    switchAdminStep(true);
+  } else {
+    isOfficerAuthenticated = false;
+    document.body.classList.remove("is-officer");
+    switchAdminStep(false);
+  }
+});
+
+// Delete Task Function
+async function deleteTask(taskId) {
+  if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
+  
+  try {
+    await deleteDoc(doc(db, "tasks", taskId));
+    alert("Task permanently deleted.");
+  } catch (err) {
+    alert("Error deleting task: " + err.message);
+  }
+}
+
+// Edit Modal Functions
+const editModal = document.getElementById("editModal");
+
+function openEditModal(taskId, data) {
+  document.getElementById("editTaskId").value = taskId;
+  document.getElementById("editTaskTitle").value = data.title || "";
+  document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
+  document.getElementById("editTaskDueDate").value = data.dueDate || "";
+  document.getElementById("editTaskBody").value = data.body || "";
+  editModal?.classList.add("active");
+}
+
+document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
+  editModal?.classList.remove("active");
+});
+
+document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const taskId = document.getElementById("editTaskId").value;
+
+  const updatedFields = {
+    title: document.getElementById("editTaskTitle").value,
+    subject: document.getElementById("editTaskSubject").value,
+    dueDate: document.getElementById("editTaskDueDate").value,
+    body: document.getElementById("editTaskBody").value,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await updateDoc(doc(db, "tasks", taskId), updatedFields);
+    editModal?.classList.remove("active");
+    alert("Task updated successfully!");
+  } catch (err) {
+    alert("Failed to update task: " + err.message);
+  }
+});
+
+// Updated Card Controls HTML in renderTaskCard:
+// Include edit (✏️) and delete (🗑️) buttons inside `.card-controls`
 </script>
 </body>
 </html>
