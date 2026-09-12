@@ -441,6 +441,54 @@
 
 /* Show admin controls when logged in as officer */
 body.is-officer .admin-only { display: flex !important; }
+
+/* Time Filters */
+.time-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.btn-time-filter {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  background: white;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.btn-time-filter.active {
+  background: #1e293b;
+  color: white;
+  border-color: #1e293b;
+}
+
+body.dark-mode .btn-time-filter {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+body.dark-mode .btn-time-filter.active {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Update 8.4: Urgent Card State (Red) */
+.card.urgent {
+  background-color: #991b1b !important; /* Strong Red */
+  border: 2px solid #ef4444;
+}
+.card.urgent .due-date {
+  color: #fca5a5 !important;
+  font-weight: 900;
+}
+    
   </style>
 </head>
 
@@ -490,7 +538,7 @@ body.is-officer .admin-only { display: flex !important; }
       <div id="saveBanner" class="status-banner btn-light-green">🟢 Live Cloud Connection Active</div>
 
   <!-- Filter Modal -->
-      <div class="filter-toolbar">
+  <div class="filter-toolbar">
   <input 
     type="text" 
     id="taskSearchInput" 
@@ -509,6 +557,14 @@ body.is-officer .admin-only { display: flex !important; }
     <option value="cmpe">CMPE 011</option>
     <option value="nstp">NSTP 1 - CWTS</option>
   </select>
+    
+    <div class="time-filters" id="timeFilterContainer">
+    <button class="btn-time-filter active" data-time="all">All Time</button>
+    <button class="btn-time-filter" data-time="today">Today</button>
+    <button class="btn-time-filter" data-time="tomorrow">Tomorrow</button>
+    <button class="btn-time-filter" data-time="overdue">Overdue</button>
+    <button class="btn-time-filter" data-time="none">No Deadline</button>
+    </div>
 </div>
 
 
@@ -588,7 +644,7 @@ body.is-officer .admin-only { display: flex !important; }
             <option value="nstp">NSTP 1 - CWTS</option>
           </select>
 
-          <input type="text" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" required />
+          <input type="date" id="adminTaskDueDate" class="admin-input" placeholder="Due Date (e.g. Due Sep 15, 2026)" />
           <textarea id="adminTaskBody" class="admin-input" placeholder="Task details and instructions..." rows="3" required style="font-family: inherit;"></textarea>
           <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
             Publish Task to Class
@@ -631,7 +687,7 @@ body.is-officer .admin-only { display: flex !important; }
         <option value="nstp">NSTP 1 - CWTS</option>
       </select>
 
-      <input type="text" id="editTaskDueDate" class="admin-input" placeholder="Due Date" required />
+      <input type="date" id="editTaskDueDate" class="admin-input" placeholder="Due Date" />
       <textarea id="editTaskBody" class="admin-input" placeholder="Task details..." rows="3" required style="font-family: inherit;"></textarea>
       
       <button type="submit" class="btn-pill btn-light-green" style="justify-content: center; padding: 12px; font-size: 0.9rem;">
@@ -840,16 +896,69 @@ body.is-officer .admin-only { display: flex !important; }
   /* ==========================================
      5. TASK CARD RENDER & ADMIN CONTROLS (UPDATE 8.3)
      ========================================== */
- function renderTaskCard(id, data) {
+function renderActiveTasks() {
+  if (!taskGrid) return;
+  taskGrid.innerHTML = "";
+
+  const archivedList = getArchivedTasks();
+  const archivedIds = archivedList.map(item => item.id);
+  
+  const query = taskSearchInput ? taskSearchInput.value.trim().toLowerCase() : "";
+  const selectedSubject = subjectFilterSelect ? subjectFilterSelect.value.toLowerCase() : "all";
+
+  const activeIds = Array.from(cachedTaskMap.keys()).filter((id) => {
+    if (archivedIds.includes(id)) return false;
+
+    const task = cachedTaskMap.get(id) || {};
+    const title = (task.title || "").toLowerCase();
+    const body = (task.body || "").toLowerCase();
+    const subject = (task.subject || "").toLowerCase();
+    const timeStatus = getDeadlineStatus(task.dueDate);
+
+    // Filter by Subject
+    if (selectedSubject !== "all" && subject !== selectedSubject) return false;
+    // Filter by Keyword
+    if (query && !title.includes(query) && !body.includes(query)) return false;
+    // Filter by Time (Update 8.4)
+    if (currentTimeFilter !== "all" && timeStatus !== currentTimeFilter) return false;
+
+    return true;
+  });
+
+  if (activeIds.length === 0) {
+    taskGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+        No tasks match your current filters.
+      </div>`;
+    return;
+  }
+
+  activeIds.forEach((id) => {
+    renderTaskCard(id, cachedTaskMap.get(id));
+  });
+}
+
+function renderTaskCard(id, data) {
   if (!taskGrid) return;
   const isCompleted = getPersonalTaskState(id);
   const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
   
+  // Apply Red styling if urgent & not completed
+  const timeStatus = getDeadlineStatus(data.dueDate);
+  let urgentClass = "";
+  if (!isCompleted && (timeStatus === "today" || timeStatus === "overdue")) {
+    urgentClass = "urgent";
+  }
+
+  // Format Due Date Text
+  let displayDate = data.dueDate ? `Due: ${data.dueDate}` : "No Deadline";
+  if (timeStatus === "overdue") displayDate = `⚠️ OVERDUE: ${data.dueDate}`;
+  if (timeStatus === "today") displayDate = `🔥 DUE TODAY: ${data.dueDate}`;
+  
   const card = document.createElement("div");
-  card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''}`;
+  card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''} ${urgentClass}`;
   card.setAttribute("data-id", id);
 
-  /* --- INSERT HERE: Card HTML Template --- */
   card.innerHTML = `
     <div>
       <div class="card-top">
@@ -863,34 +972,47 @@ body.is-officer .admin-only { display: flex !important; }
         <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
       </div>
       <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-      <div class="due-date">${data.dueDate || ''}</div>
+      <div class="due-date">${displayDate}</div>
     </div>
     <div class="card-body">${data.body || ''}</div>
   `;
 
+  // Attach handlers (Completion toggle)
   const checkbox = card.querySelector(".checkbox");
-  const expandBtn = card.querySelector(".btn-expand-icon");
-  const archiveBtn = card.querySelector(".btn-archive-icon");
-  const editBtn = card.querySelector(".btn-edit-icon");
-  const deleteBtn = card.querySelector(".btn-delete-icon");
-
-  const toggleCompletion = () => {
-    const newState = !getPersonalTaskState(id);
-    setPersonalTaskState(id, newState);
-    checkbox.checked = newState;
-    card.classList.toggle("completed", newState);
-  };
-
   checkbox?.addEventListener("change", (e) => {
     e.stopPropagation();
     setPersonalTaskState(id, checkbox.checked);
     card.classList.toggle("completed", checkbox.checked);
+    
+    // Remove red urgency if marked complete
+    if (checkbox.checked) {
+      card.classList.remove("urgent");
+    } else if (timeStatus === "today" || timeStatus === "overdue") {
+      card.classList.add("urgent");
+    }
   });
 
-  archiveBtn?.addEventListener("click", (e) => {
+  // Attach Archive, Edit, Delete, Expand...
+  card.querySelector(".btn-archive-icon")?.addEventListener("click", (e) => { e.stopPropagation(); archiveTask(id); });
+  card.querySelector(".btn-edit-icon")?.addEventListener("click", (e) => { e.stopPropagation(); openEditModal(id, data); });
+  card.querySelector(".btn-delete-icon")?.addEventListener("click", (e) => { e.stopPropagation(); deleteTask(id); });
+  
+  card.querySelector(".btn-expand-icon")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    archiveTask(id);
+    document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+    document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+    document.getElementById("expDueDate").textContent = displayDate;
+    document.getElementById("expBody").innerHTML = data.body || '';
+    expandModal?.classList.add("active");
   });
+
+  card.addEventListener("click", (e) => {
+    if (e.target.tagName === "A" || e.target.tagName === "BUTTON" || e.target.classList.contains("checkbox")) return;
+    checkbox.click(); 
+  });
+
+  taskGrid.appendChild(card);
+}
 
   /* --- INSERT HERE: Edit & Delete Event Handlers --- */
   editBtn?.addEventListener("click", (e) => {
@@ -1214,6 +1336,54 @@ async function deleteTask(taskId) {
   } catch (err) {
     alert("Error deleting task: " + err.message);
   }
+}
+  /*BUG FIX: Robust Expand Modal Controls*/
+const btnCloseExpand = document.getElementById("btnCloseExpand");
+if (btnCloseExpand) {
+  btnCloseExpand.addEventListener("click", () => {
+    expandModal?.classList.remove("active");
+  });
+}
+// Allow clicking the dark background to close the modal
+expandModal?.addEventListener("click", (e) => {
+  if (e.target === expandModal) {
+    expandModal.classList.remove("active");
+  }
+});
+
+/* ==========================================
+    9. Date Logic & Filtering (Update 8.4)
+   ========================================== */
+let currentTimeFilter = "all";
+
+// Setup Time Filter Buttons
+document.querySelectorAll(".btn-time-filter").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
+    e.target.classList.add("active");
+    currentTimeFilter = e.target.getAttribute("data-time");
+    renderActiveTasks();
+  });
+});
+
+// Calculate exactly how many days away a deadline is
+function getDeadlineStatus(dateString) {
+  if (!dateString || dateString.trim() === "") return "none";
+  
+  const dueDate = new Date(dateString);
+  if (isNaN(dueDate.getTime())) return "unknown"; 
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  
+  const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return "overdue";
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  return "future";
 }
 </script>
 </body>
