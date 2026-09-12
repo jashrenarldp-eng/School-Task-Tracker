@@ -845,11 +845,44 @@ body.dark-mode .btn-time-filter.active {
   });
 
   /* ==========================================
-     4. SEARCH & SUBJECT FILTERING (UPDATE 8.2)
+     4. DATE LOGIC & TIME FILTERING (UPDATE 8.4)
      ========================================== */
+  let currentTimeFilter = "all";
+
+  document.querySelectorAll(".btn-time-filter").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      currentTimeFilter = e.target.getAttribute("data-time");
+      renderActiveTasks();
+    });
+  });
+
+  function getDeadlineStatus(dateString) {
+    if (!dateString || dateString.trim() === "") return "none";
+    
+    const dueDate = new Date(dateString);
+    if (isNaN(dueDate.getTime())) return "unknown"; 
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    
+    const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return "overdue";
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "tomorrow";
+    return "future";
+  }
+
   taskSearchInput?.addEventListener("input", renderActiveTasks);
   subjectFilterSelect?.addEventListener("change", renderActiveTasks);
 
+  /* ==========================================
+     5. TASK CARD RENDER & ADMIN CONTROLS 
+     ========================================== */
   function renderActiveTasks() {
     if (!taskGrid) return;
     taskGrid.innerHTML = "";
@@ -867,23 +900,19 @@ body.dark-mode .btn-time-filter.active {
       const title = (task.title || "").toLowerCase();
       const body = (task.body || "").toLowerCase();
       const subject = (task.subject || "").toLowerCase();
+      const timeStatus = getDeadlineStatus(task.dueDate);
 
-      if (selectedSubject !== "all" && subject !== selectedSubject) {
-        return false;
-      }
-
-      if (query && !title.includes(query) && !body.includes(query)) {
-        return false;
-      }
+      if (selectedSubject !== "all" && subject !== selectedSubject) return false;
+      if (query && !title.includes(query) && !body.includes(query)) return false;
+      if (currentTimeFilter !== "all" && timeStatus !== currentTimeFilter) return false;
 
       return true;
     });
 
     if (activeIds.length === 0) {
-      const isFiltering = query !== "" || selectedSubject !== "all";
       taskGrid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-          ${isFiltering ? 'No matching tasks found for your search/filter.' : 'No active tasks published by officers yet.'}
+          No tasks match your current filters.
         </div>`;
       return;
     }
@@ -893,166 +922,76 @@ body.dark-mode .btn-time-filter.active {
     });
   }
 
-  /* ==========================================
-     5. TASK CARD RENDER & ADMIN CONTROLS (UPDATE 8.3)
-     ========================================== */
-function renderActiveTasks() {
-  if (!taskGrid) return;
-  taskGrid.innerHTML = "";
-
-  const archivedList = getArchivedTasks();
-  const archivedIds = archivedList.map(item => item.id);
-  
-  const query = taskSearchInput ? taskSearchInput.value.trim().toLowerCase() : "";
-  const selectedSubject = subjectFilterSelect ? subjectFilterSelect.value.toLowerCase() : "all";
-
-  const activeIds = Array.from(cachedTaskMap.keys()).filter((id) => {
-    if (archivedIds.includes(id)) return false;
-
-    const task = cachedTaskMap.get(id) || {};
-    const title = (task.title || "").toLowerCase();
-    const body = (task.body || "").toLowerCase();
-    const subject = (task.subject || "").toLowerCase();
-    const timeStatus = getDeadlineStatus(task.dueDate);
-
-    // Filter by Subject
-    if (selectedSubject !== "all" && subject !== selectedSubject) return false;
-    // Filter by Keyword
-    if (query && !title.includes(query) && !body.includes(query)) return false;
-    // Filter by Time (Update 8.4)
-    if (currentTimeFilter !== "all" && timeStatus !== currentTimeFilter) return false;
-
-    return true;
-  });
-
-  if (activeIds.length === 0) {
-    taskGrid.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-        No tasks match your current filters.
-      </div>`;
-    return;
-  }
-
-  activeIds.forEach((id) => {
-    renderTaskCard(id, cachedTaskMap.get(id));
-  });
-}
-
-function renderTaskCard(id, data) {
-  if (!taskGrid) return;
-  const isCompleted = getPersonalTaskState(id);
-  const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
-  
-  // Apply Red styling if urgent & not completed
-  const timeStatus = getDeadlineStatus(data.dueDate);
-  let urgentClass = "";
-  if (!isCompleted && (timeStatus === "today" || timeStatus === "overdue")) {
-    urgentClass = "urgent";
-  }
-
-  // Format Due Date Text
-  let displayDate = data.dueDate ? `Due: ${data.dueDate}` : "No Deadline";
-  if (timeStatus === "overdue") displayDate = `⚠️ OVERDUE: ${data.dueDate}`;
-  if (timeStatus === "today") displayDate = `🔥 DUE TODAY: ${data.dueDate}`;
-  
-  const card = document.createElement("div");
-  card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''} ${urgentClass}`;
-  card.setAttribute("data-id", id);
-
-  card.innerHTML = `
-    <div>
-      <div class="card-top">
-        <div class="card-controls">
-          <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
-          <button class="btn-expand-icon" title="Expand task view">⤢</button>
-          <button class="btn-archive-icon" title="Archive task">📦</button>
-          <button class="btn-edit-icon admin-only" title="Edit task">✏️</button>
-          <button class="btn-delete-icon admin-only" title="Delete task">🗑️</button>
-        </div>
-        <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
-      </div>
-      <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
-      <div class="due-date">${displayDate}</div>
-    </div>
-    <div class="card-body">${data.body || ''}</div>
-  `;
-
-  // Attach handlers (Completion toggle)
-  const checkbox = card.querySelector(".checkbox");
-  checkbox?.addEventListener("change", (e) => {
-    e.stopPropagation();
-    setPersonalTaskState(id, checkbox.checked);
-    card.classList.toggle("completed", checkbox.checked);
+  function renderTaskCard(id, data) {
+    if (!taskGrid) return;
+    const isCompleted = getPersonalTaskState(id);
+    const subjectClass = data.subject ? `bg-${data.subject.toLowerCase().replace(/[^a-z0-9]/g, '')}` : 'bg-cmpe';
     
-    // Remove red urgency if marked complete
-    if (checkbox.checked) {
-      card.classList.remove("urgent");
-    } else if (timeStatus === "today" || timeStatus === "overdue") {
-      card.classList.add("urgent");
+    const timeStatus = getDeadlineStatus(data.dueDate);
+    let urgentClass = "";
+    if (!isCompleted && (timeStatus === "today" || timeStatus === "overdue")) {
+      urgentClass = "urgent";
     }
-  });
 
-  // Attach Archive, Edit, Delete, Expand...
-  card.querySelector(".btn-archive-icon")?.addEventListener("click", (e) => { e.stopPropagation(); archiveTask(id); });
-  card.querySelector(".btn-edit-icon")?.addEventListener("click", (e) => { e.stopPropagation(); openEditModal(id, data); });
-  card.querySelector(".btn-delete-icon")?.addEventListener("click", (e) => { e.stopPropagation(); deleteTask(id); });
-  
-  card.querySelector(".btn-expand-icon")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
-    document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
-    document.getElementById("expDueDate").textContent = displayDate;
-    document.getElementById("expBody").innerHTML = data.body || '';
-    expandModal?.classList.add("active");
-  });
+    let displayDate = data.dueDate ? `Due: ${data.dueDate}` : "No Deadline";
+    if (timeStatus === "overdue") displayDate = `⚠️ OVERDUE: ${data.dueDate}`;
+    if (timeStatus === "today") displayDate = `🔥 DUE TODAY: ${data.dueDate}`;
+    
+    const card = document.createElement("div");
+    card.className = `card ${subjectClass} ${isCompleted ? 'completed' : ''} ${urgentClass}`;
+    card.setAttribute("data-id", id);
 
-  card.addEventListener("click", (e) => {
-    if (e.target.tagName === "A" || e.target.tagName === "BUTTON" || e.target.classList.contains("checkbox")) return;
-    checkbox.click(); 
-  });
+    card.innerHTML = `
+      <div>
+        <div class="card-top">
+          <div class="card-controls">
+            <input type="checkbox" class="checkbox" ${isCompleted ? 'checked' : ''} />
+            <button class="btn-expand-icon" title="Expand task view">⤢</button>
+            <button class="btn-archive-icon" title="Archive task">📦</button>
+            <button class="btn-edit-icon admin-only" title="Edit task">✏️</button>
+            <button class="btn-delete-icon admin-only" title="Delete task">🗑️</button>
+          </div>
+          <span class="badge">${(data.subject || 'GENERAL').toUpperCase()}</span>
+        </div>
+        <h3 class="card-title">${data.title || 'Untitled Task'}</h3>
+        <div class="due-date">${displayDate}</div>
+      </div>
+      <div class="card-body">${data.body || ''}</div>
+    `;
 
-  taskGrid.appendChild(card);
-}
+    const checkbox = card.querySelector(".checkbox");
+    checkbox?.addEventListener("change", (e) => {
+      e.stopPropagation();
+      setPersonalTaskState(id, checkbox.checked);
+      card.classList.toggle("completed", checkbox.checked);
+      
+      if (checkbox.checked) {
+        card.classList.remove("urgent");
+      } else if (timeStatus === "today" || timeStatus === "overdue") {
+        card.classList.add("urgent");
+      }
+    });
 
-  /* --- INSERT HERE: Edit & Delete Event Handlers --- */
-  editBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    openEditModal(id, data);
-  });
+    card.querySelector(".btn-archive-icon")?.addEventListener("click", (e) => { e.stopPropagation(); archiveTask(id); });
+    card.querySelector(".btn-edit-icon")?.addEventListener("click", (e) => { e.stopPropagation(); openEditModal(id, data); });
+    card.querySelector(".btn-delete-icon")?.addEventListener("click", (e) => { e.stopPropagation(); deleteTask(id); });
+    
+    card.querySelector(".btn-expand-icon")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("expBadge").textContent = (data.subject || 'GENERAL').toUpperCase();
+      document.getElementById("expTitle").textContent = data.title || 'Untitled Task';
+      document.getElementById("expDueDate").textContent = displayDate;
+      document.getElementById("expBody").innerHTML = data.body || '';
+      expandModal?.classList.add("active");
+    });
 
-  deleteBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    deleteTask(id);
-  });
+    card.addEventListener("click", (e) => {
+      if (e.target.tagName === "A" || e.target.tagName === "BUTTON" || e.target.classList.contains("checkbox")) return;
+      checkbox.click(); 
+    });
 
-  expandBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const expBadge = document.getElementById("expBadge");
-    const expTitle = document.getElementById("expTitle");
-    const expDueDate = document.getElementById("expDueDate");
-    const expBody = document.getElementById("expBody");
-
-    if (expBadge) expBadge.textContent = (data.subject || 'GENERAL').toUpperCase();
-    if (expTitle) expTitle.textContent = data.title || 'Untitled Task';
-    if (expDueDate) expDueDate.textContent = data.dueDate || '';
-    if (expBody) expBody.innerHTML = data.body || '';
-    if (expandModal) expandModal.classList.add("active");
-  });
-
-  card.addEventListener("click", (e) => {
-    if (
-      e.target.tagName === "A" || 
-      e.target.classList.contains("btn-expand-icon") || 
-      e.target.classList.contains("btn-archive-icon") || 
-      e.target.classList.contains("btn-edit-icon") || 
-      e.target.classList.contains("btn-delete-icon") || 
-      e.target.classList.contains("checkbox")
-    ) return;
-    toggleCompletion();
-  });
-
-  taskGrid.appendChild(card);
-}
+    taskGrid.appendChild(card);
+  }
 
   /* ==========================================
      6. THEME & NETWORK
@@ -1198,193 +1137,143 @@ function renderTaskCard(id, data) {
     console.error("Firestore Read Error: ", error);
   });
 
-/* ==========================================
-   8. OFFICER AUTH & ADMIN ACTIONS (UPDATE 8.3)
-   ========================================== */
-function switchAdminStep(showForm) {
-  if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
-  if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
-}
-
-// Open Task Maker Modal
-document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
-  adminModal?.classList.add("active");
-});
-
-// Close Task Maker Modal (keeps officer session active)
-document.getElementById("btnCloseAdmin")?.addEventListener("click", () => {
-  adminModal?.classList.remove("active");
-});
-
-// Explicit Officer Logout Button
-document.getElementById("btnLogoutOfficer")?.addEventListener("click", async () => {
-  await signOut(auth);
-  alert("Officer session closed.");
-});
-
-// Monitor Auth State and keep edit/delete buttons active while signed in
-onAuthStateChanged(auth, (user) => {
-  if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
-    isOfficerAuthenticated = true;
-    document.body.classList.add("is-officer");
-    switchAdminStep(true);
-  } else {
-    isOfficerAuthenticated = false;
-    document.body.classList.remove("is-officer");
-    switchAdminStep(false);
-  }
-});
-
-// Officer Passcode Verification Handler
-document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
-  e.preventDefault();
-  
-  const emailInput = document.getElementById("adminEmail")?.value.trim();
-  const passwordInput = document.getElementById("adminPasscode")?.value;
-
-  if (!emailInput || !passwordInput) {
-    if (passcodeError) {
-      passcodeError.textContent = "Please enter both email and password.";
-      passcodeError.style.display = "block";
-    }
-    return;
+  /* ==========================================
+     8. OFFICER AUTH & ADMIN ACTIONS
+     ========================================== */
+  function switchAdminStep(showForm) {
+    if (adminAuthStep) adminAuthStep.style.display = showForm ? "none" : "block";
+    if (adminFormStep) adminFormStep.style.display = showForm ? "block" : "none";
   }
 
-  try {
-    await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-    if (passcodeError) passcodeError.style.display = "none";
-    const passcodeEl = document.getElementById("adminPasscode");
-    if (passcodeEl) passcodeEl.value = "";
-    switchAdminStep(true);
-  } catch (error) {
-    console.error("Auth Error Code:", error.code, error.message);
-    if (passcodeError) {
-      if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-        passcodeError.textContent = "Invalid email or password. Access denied.";
-      } else {
-        passcodeError.textContent = `Login failed (${error.code}). Check browser console.`;
-      }
-      passcodeError.style.display = "block";
-    }
-  }
-});
+  document.getElementById("btnAdminAccess")?.addEventListener("click", () => {
+    adminModal?.classList.add("active");
+  });
 
-// Publish Task Form Handler
-document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  
-  const newTask = {
-    title: document.getElementById("adminTaskTitle")?.value || "",
-    subject: document.getElementById("adminTaskSubject")?.value || "",
-    dueDate: document.getElementById("adminTaskDueDate")?.value || "",
-    body: document.getElementById("adminTaskBody")?.value || "",
-    createdAt: new Date().toISOString()
-  };
-
-  try {
-    await addDoc(collection(db, "tasks"), newTask);
-    document.getElementById("adminTaskForm")?.reset();
+  document.getElementById("btnCloseAdmin")?.addEventListener("click", () => {
     adminModal?.classList.remove("active");
-    alert("Task successfully published!");
-  } catch (err) {
-    alert("Failed to publish task: " + err.message);
+  });
+
+  document.getElementById("btnLogoutOfficer")?.addEventListener("click", async () => {
+    await signOut(auth);
+    alert("Officer session closed.");
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user && user.email && user.email.toLowerCase() === ALLOWED_OFFICER_EMAIL.toLowerCase()) {
+      isOfficerAuthenticated = true;
+      document.body.classList.add("is-officer");
+      switchAdminStep(true);
+    } else {
+      isOfficerAuthenticated = false;
+      document.body.classList.remove("is-officer");
+      switchAdminStep(false);
+    }
+  });
+
+  document.getElementById("btnVerifyPasscode")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    
+    const emailInput = document.getElementById("adminEmail")?.value.trim();
+    const passwordInput = document.getElementById("adminPasscode")?.value;
+
+    if (!emailInput || !passwordInput) {
+      if (passcodeError) passcodeError.style.display = "block";
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, emailInput, passwordInput);
+      if (passcodeError) passcodeError.style.display = "none";
+      if (document.getElementById("adminPasscode")) document.getElementById("adminPasscode").value = "";
+      switchAdminStep(true);
+    } catch (error) {
+      if (passcodeError) {
+        passcodeError.textContent = "Invalid email or password. Access denied.";
+        passcodeError.style.display = "block";
+      }
+    }
+  });
+
+  document.getElementById("adminTaskForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    
+    const newTask = {
+      title: document.getElementById("adminTaskTitle")?.value || "",
+      subject: document.getElementById("adminTaskSubject")?.value || "",
+      dueDate: document.getElementById("adminTaskDueDate")?.value || "",
+      body: document.getElementById("adminTaskBody")?.value || "",
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, "tasks"), newTask);
+      document.getElementById("adminTaskForm")?.reset();
+      adminModal?.classList.remove("active");
+      alert("Task successfully published!");
+    } catch (err) {
+      alert("Failed to publish task: " + err.message);
+    }
+  });
+
+  /* Edit Task Handlers */
+  function openEditModal(taskId, data) {
+    if (document.getElementById("editTaskId")) document.getElementById("editTaskId").value = taskId;
+    if (document.getElementById("editTaskTitle")) document.getElementById("editTaskTitle").value = data.title || "";
+    if (document.getElementById("editTaskSubject")) document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
+    if (document.getElementById("editTaskDueDate")) document.getElementById("editTaskDueDate").value = data.dueDate || "";
+    if (document.getElementById("editTaskBody")) document.getElementById("editTaskBody").value = data.body || "";
+    editModal?.classList.add("active");
   }
-});
 
-/* Edit Task Handlers */
-function openEditModal(taskId, data) {
-  document.getElementById("editTaskId").value = taskId;
-  document.getElementById("editTaskTitle").value = data.title || "";
-  document.getElementById("editTaskSubject").value = (data.subject || "chem").toLowerCase();
-  document.getElementById("editTaskDueDate").value = data.dueDate || "";
-  document.getElementById("editTaskBody").value = data.body || "";
-  editModal?.classList.add("active");
-}
-
-document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
-  editModal?.classList.remove("active");
-});
-
-document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const taskId = document.getElementById("editTaskId")?.value;
-
-  const updatedFields = {
-    title: document.getElementById("editTaskTitle")?.value || "",
-    subject: document.getElementById("editTaskSubject")?.value || "",
-    dueDate: document.getElementById("editTaskDueDate")?.value || "",
-    body: document.getElementById("editTaskBody")?.value || "",
-    updatedAt: new Date().toISOString()
-  };
-
-  try {
-    await updateDoc(doc(db, "tasks", taskId), updatedFields);
+  document.getElementById("btnCloseEdit")?.addEventListener("click", () => {
     editModal?.classList.remove("active");
-    alert("Task updated successfully!");
-  } catch (err) {
-    alert("Failed to update task: " + err.message);
-  }
-});
-
-/* Delete Task Handler */
-async function deleteTask(taskId) {
-  if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
-  
-  try {
-    await deleteDoc(doc(db, "tasks", taskId));
-    alert("Task permanently deleted.");
-  } catch (err) {
-    alert("Error deleting task: " + err.message);
-  }
-}
-  /*BUG FIX: Robust Expand Modal Controls*/
-const btnCloseExpand = document.getElementById("btnCloseExpand");
-if (btnCloseExpand) {
-  btnCloseExpand.addEventListener("click", () => {
-    expandModal?.classList.remove("active");
   });
-}
-// Allow clicking the dark background to close the modal
-expandModal?.addEventListener("click", (e) => {
-  if (e.target === expandModal) {
-    expandModal.classList.remove("active");
-  }
-});
 
-/* ==========================================
-    9. Date Logic & Filtering (Update 8.4)
-   ========================================== */
-let currentTimeFilter = "all";
+  document.getElementById("editTaskForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const taskId = document.getElementById("editTaskId")?.value;
 
-// Setup Time Filter Buttons
-document.querySelectorAll(".btn-time-filter").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
-    e.target.classList.add("active");
-    currentTimeFilter = e.target.getAttribute("data-time");
-    renderActiveTasks();
+    const updatedFields = {
+      title: document.getElementById("editTaskTitle")?.value || "",
+      subject: document.getElementById("editTaskSubject")?.value || "",
+      dueDate: document.getElementById("editTaskDueDate")?.value || "",
+      body: document.getElementById("editTaskBody")?.value || "",
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      await updateDoc(doc(db, "tasks", taskId), updatedFields);
+      editModal?.classList.remove("active");
+      alert("Task updated successfully!");
+    } catch (err) {
+      alert("Failed to update task: " + err.message);
+    }
   });
-});
 
-// Calculate exactly how many days away a deadline is
-function getDeadlineStatus(dateString) {
-  if (!dateString || dateString.trim() === "") return "none";
+  /* Delete Task Handler */
+  async function deleteTask(taskId) {
+    if (!confirm("Are you sure you want to permanently delete this task for all students?")) return;
+    try {
+      await deleteDoc(doc(db, "tasks", taskId));
+      alert("Task permanently deleted.");
+    } catch (err) {
+      alert("Error deleting task: " + err.message);
+    }
+  }
+
+  /* Expand Modal Bug Fix Controls */
+  const btnCloseExpand = document.getElementById("btnCloseExpand");
+  if (btnCloseExpand) {
+    btnCloseExpand.addEventListener("click", () => {
+      expandModal?.classList.remove("active");
+    });
+  }
   
-  const dueDate = new Date(dateString);
-  if (isNaN(dueDate.getTime())) return "unknown"; 
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-  
-  const diffDays = Math.round((due - today) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return "overdue";
-  if (diffDays === 0) return "today";
-  if (diffDays === 1) return "tomorrow";
-  return "future";
-}
+  expandModal?.addEventListener("click", (e) => {
+    if (e.target === expandModal) {
+      expandModal.classList.remove("active");
+    }
+  });
 </script>
 </body>
 </html>
